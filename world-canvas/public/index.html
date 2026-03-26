@@ -248,12 +248,25 @@
     }
     .cart-arrow { color: #4a4a60; font-size: 0.9rem; }
 
-    .cart-status {
-      flex: 1; font-size: 0.78rem; color: #a78bfa;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      font-variant-numeric: tabular-nums;
+    /* Slot time picker inside each cart row */
+    .slot-select {
+      flex: 1;
+      background: #252535; color: #c8c8e0;
+      border: 1px solid #3a3a52; border-radius: 6px;
+      padding: 4px 7px; font-size: 0.76rem;
+      cursor: pointer; font-variant-numeric: tabular-nums;
+      min-width: 0;
     }
-    .wait-span { color: #6b6b80; }
+    .slot-select:hover  { border-color: #a78bfa88; }
+    .slot-select:focus  { outline: none; border-color: #a78bfa; }
+    .slot-select option { background: #1a1a27; }
+
+    .slot-wait {
+      flex-shrink: 0;
+      font-size: 0.74rem; color: #6b6b80;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
 
     /* ── Toast ────────────────────────────────── */
     #toast {
@@ -451,12 +464,10 @@
       const s  = Math.ceil(ms / 1000);
       slotChipEl.textContent = `slot in ${s}s`;
 
-      // Live countdown on each cart-item status
-      document.querySelectorAll('.cart-status[data-at]').forEach(el => {
-        const at   = +el.dataset.at;
-        const wait = Math.max(0, Math.ceil((at - now) / 1000));
-        const span = el.querySelector('.wait-span');
-        if (span) span.textContent = wait > 0 ? ` · in ${wait}s` : ' · now';
+      // Live countdown next to each slot picker
+      document.querySelectorAll('.slot-wait[data-at]').forEach(el => {
+        const wait = Math.max(0, Math.ceil((+el.dataset.at - now) / 1000));
+        el.textContent = wait > 0 ? `in ${wait}s` : 'now';
       });
     }, 150);
 
@@ -516,8 +527,8 @@
     // ── Cell click (cart toggle) ──────────────────────
     function onCellClick(index) {
       if (cart.has(index)) {
-        // Re-clicking an already-queued pixel updates its colour
-        cart.set(index, { color: selectedColor });
+        // Re-clicking updates the colour while keeping the chosen slot
+        cart.set(index, { ...cart.get(index), color: selectedColor });
         refreshCellCartDot(index);
         refreshCartEntry(index);
       } else {
@@ -526,7 +537,7 @@
     }
 
     function addToCart(index) {
-      cart.set(index, { color: selectedColor });
+      cart.set(index, { color: selectedColor, scheduledAt: nextSlotStart() });
       cells[index].classList.add('selected');
       refreshCellCartDot(index);
       renderCartItem(index);
@@ -566,16 +577,19 @@
       btnApply.disabled = n === 0 || ws.readyState !== WebSocket.OPEN;
     }
 
-    // Compute the slot at which a new queue entry for this pixel would land.
-    // Mirrors the server logic so the cart item can show an accurate preview.
-    function estimatedSlot(index) {
-      const d = cellData[index];
-      if (d.pendingAt !== null) {
-        // Slot after the last pending entry already registered
-        return d.pendingAt + SLOT_MS * d.queueLength;
+    // Build the list of upcoming slot boundaries for the picker
+    function slotOptions(selectedAt) {
+      const opts = [];
+      const base = nextSlotStart();
+      for (let i = 0; i < 10; i++) {
+        const t = base + i * SLOT_MS;
+        opts.push({ value: t, label: fmtTime(t) + (i === 0 ? ' · next' : ''), selected: t === selectedAt });
       }
-      if (d.activeUntil !== null) return d.activeUntil;
-      return nextSlotStart();
+      // If selectedAt is a future slot that's already beyond our 10-option window, add it
+      if (selectedAt > base + 9 * SLOT_MS) {
+        opts.push({ value: selectedAt, label: fmtTime(selectedAt), selected: true });
+      }
+      return opts;
     }
 
     function renderCartItem(index) {
@@ -583,21 +597,21 @@
       const d     = cellData[index];
       const row   = Math.floor(index / GRID_SIZE) + 1;
       const col   = (index % GRID_SIZE) + 1;
-      const at    = estimatedSlot(index);
+      const at    = entry.scheduledAt;
       const wait  = Math.max(0, Math.ceil((at - Date.now()) / 1000));
 
       const li = document.createElement('div');
-      li.className  = 'cart-item';
+      li.className     = 'cart-item';
       li.dataset.index = index;
 
       const removeBtn = document.createElement('button');
-      removeBtn.className = 'cart-remove';
-      removeBtn.title = 'Remove';
+      removeBtn.className   = 'cart-remove';
+      removeBtn.title       = 'Remove';
       removeBtn.textContent = '×';
       removeBtn.addEventListener('click', () => removeFromCart(index));
 
       const loc = document.createElement('span');
-      loc.className = 'cart-loc';
+      loc.className   = 'cart-loc';
       loc.textContent = `Line ${row}, Col ${col}`;
 
       const colors = document.createElement('div');
@@ -608,12 +622,29 @@
         <div class="chip" style="background:${entry.color}"></div>
       `;
 
-      const status = document.createElement('span');
-      status.className = 'cart-status';
-      status.dataset.at = at;
-      status.innerHTML = `<strong>${fmtTime(at)}</strong><span class="wait-span"> · in ${wait}s</span>`;
+      // Slot picker
+      const sel = document.createElement('select');
+      sel.className = 'slot-select';
+      slotOptions(at).forEach(({ value, label, selected }) => {
+        const opt = document.createElement('option');
+        opt.value    = value;
+        opt.textContent = label;
+        opt.selected = selected;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener('change', () => {
+        cart.set(index, { ...cart.get(index), scheduledAt: +sel.value });
+        // Refresh just the wait span
+        const span = li.querySelector('.slot-wait');
+        if (span) span.dataset.at = sel.value;
+      });
 
-      li.append(removeBtn, loc, colors, status);
+      const waitSpan = document.createElement('span');
+      waitSpan.className  = 'slot-wait';
+      waitSpan.dataset.at = at;
+      waitSpan.textContent = `in ${wait}s`;
+
+      li.append(removeBtn, loc, colors, sel, waitSpan);
       cartItems.appendChild(li);
     }
 
@@ -636,11 +667,14 @@
 
     btnApply.addEventListener('click', () => {
       if (ws.readyState !== WebSocket.OPEN || cart.size === 0) return;
-      const items = [...cart.entries()].map(([index, { color }]) => ({ index, color }));
+      const ns = nextSlotStart();
+      const items = [...cart.entries()].map(([index, { color, scheduledAt }]) => ({
+        index,
+        color,
+        // Ensure the chosen slot is still in the future; bump if the clock moved past it
+        scheduledAt: scheduledAt >= ns ? scheduledAt : ns,
+      }));
       [...cart.keys()].forEach(removeFromCart);
-      // Server will broadcast 'update' snapshots with pendingColor set, so
-      // cells will immediately show the pulsing pending bar without us needing
-      // to guess the exact scheduled time locally.
       ws.send(JSON.stringify({ type: 'batch_paint', items }));
     });
 

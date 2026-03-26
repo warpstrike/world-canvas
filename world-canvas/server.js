@@ -112,18 +112,37 @@ wss.on('connection', ws => {
 
       const p = pixels[index];
 
-      // Find the first free slot: after the active slot (if any) and all
-      // already-queued slots.  All slots are aligned to slot boundaries.
+      // Determine the slot to use.
+      // Client may request a specific slot boundary; validate it then honour it.
+      const ns       = nextSlotStart();
+      let requested  = item.scheduledAt;
       let scheduledAt;
-      if (p.queue.length > 0) {
-        scheduledAt = p.queue[p.queue.length - 1].slotStart + SLOT_MS;
-      } else if (p.activeUntil !== null) {
-        scheduledAt = p.activeUntil;            // begins right when current ends
+
+      const isValidRequest =
+        typeof requested === 'number' &&
+        requested % SLOT_MS === 0 &&
+        requested >= ns &&
+        // Pixel must be free at that slot (not still active)
+        (p.activeUntil === null || requested >= p.activeUntil) &&
+        // No existing queue entry already occupies that slot
+        !p.queue.some(q => q.slotStart === requested);
+
+      if (isValidRequest) {
+        scheduledAt = requested;
       } else {
-        scheduledAt = nextSlotStart();          // blank — next upcoming boundary
+        // Auto: next available slot after current active period + queue
+        if (p.queue.length > 0) {
+          scheduledAt = p.queue[p.queue.length - 1].slotStart + SLOT_MS;
+        } else if (p.activeUntil !== null) {
+          scheduledAt = p.activeUntil;
+        } else {
+          scheduledAt = ns;
+        }
       }
 
       p.queue.push({ color, slotStart: scheduledAt });
+      // Keep queue sorted so processPixel always reads the earliest entry first
+      p.queue.sort((a, b) => a.slotStart - b.slotStart);
       results.push({ index, scheduledAt, queuePosition: p.queue.length });
     }
 
