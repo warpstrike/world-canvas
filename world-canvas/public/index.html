@@ -75,7 +75,7 @@
       pointer-events: none;
     }
 
-    /* Timer bar */
+    /* Timer bar (white scaleX bar at the bottom) */
     .cell::after {
       content: '';
       position: absolute;
@@ -87,6 +87,21 @@
       transition: transform 0.15s linear;
     }
     .cell.blank::after { display: none; }
+
+    /* Pending bar: pulsing colored stripe at the TOP of the cell.
+       Shows the next scheduled colour before its slot fires. */
+    .cell .pending-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 5px;
+      border-radius: 5px 5px 0 0;
+      pointer-events: none;
+      animation: pending-pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pending-pulse {
+      0%, 100% { opacity: 0.5; }
+      50%       { opacity: 1;   }
+    }
 
     /* Queue badge */
     .cell .badge {
@@ -148,6 +163,7 @@
       display: flex; align-items: center; justify-content: space-between;
       padding: 14px 16px;
       border-bottom: 1px solid #2a2a3e;
+      gap: 10px;
     }
     #cart-title {
       font-size: 0.92rem; font-weight: 700; color: #c8c8e0;
@@ -161,6 +177,19 @@
     }
     #cart-count-badge.show { display: inline-block; }
 
+    /* Slot countdown chip */
+    #slot-chip {
+      font-size: 0.74rem; font-weight: 600;
+      color: #a78bfa;
+      background: rgba(167,139,250,0.13);
+      border: 1px solid rgba(167,139,250,0.2);
+      padding: 3px 9px; border-radius: 6px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      letter-spacing: 0.01em;
+    }
+
+    #cart-header-right { display: flex; align-items: center; gap: 8px; }
     #cart-btns { display: flex; gap: 8px; }
     #cart-btns button {
       padding: 7px 14px; border-radius: 7px; font-size: 0.82rem;
@@ -220,44 +249,45 @@
     .cart-arrow { color: #4a4a60; font-size: 0.9rem; }
 
     .cart-status {
-      flex: 1; font-size: 0.78rem;
+      flex: 1; font-size: 0.78rem; color: #a78bfa;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-variant-numeric: tabular-nums;
     }
-    .cart-status.immediate { color: #22c55e; }
-    .cart-status.queued    { color: #f59e0b; }
+    .wait-span { color: #6b6b80; }
 
     /* ── Toast ────────────────────────────────── */
     #toast {
-      position: fixed; bottom: 24px; right: 24px;
-      background: #1a1a27; border: 1px solid #2e2e44;
-      border-radius: 12px; padding: 14px 18px;
-      font-size: 0.85rem; color: #c8c8e0;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.45);
-      max-width: 300px;
-      transform: translateY(80px); opacity: 0;
-      transition: transform 0.3s cubic-bezier(0.34,1.2,0.64,1), opacity 0.3s ease;
-      z-index: 200; pointer-events: none;
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #1e1e2e; border: 1px solid #3a3a52;
+      border-radius: 12px; padding: 14px 20px;
+      min-width: 260px; max-width: 400px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 100;
     }
-    #toast.show { transform: translateY(0); opacity: 1; }
-    #toast .toast-title { font-weight: 700; color: #a78bfa; margin-bottom: 4px; }
-    #toast .toast-line  { color: #8888a0; font-size: 0.8rem; margin-top: 2px; }
-    #toast .toast-line strong { color: #e8e8f0; font-weight: 600; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+    .toast-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 6px; color: #e0e0f0; }
+    .toast-line  { font-size: 0.8rem; color: #8888a8; line-height: 1.6; }
+    .toast-line strong { color: #a78bfa; }
   </style>
 </head>
 <body>
 
   <header>
     <h1>World Canvas</h1>
-    <p>Select pixels, pick a color, apply together. Each pixel lasts 10 seconds.</p>
+    <p>A shared 10×10 canvas — paint pixels that last one slot (10 s)</p>
   </header>
 
   <div id="status">
-    <span id="status-dot"></span>
+    <div id="status-dot"></div>
     <span id="status-text">Connecting…</span>
   </div>
 
+  <!-- Canvas grid -->
   <div id="grid"></div>
 
+  <!-- Colour palette -->
   <div id="palette-wrap">
     <div id="swatches"></div>
     <div id="custom-color-wrap">
@@ -265,9 +295,8 @@
       <input type="color" id="custom-color" value="#a78bfa" />
     </div>
     <div id="selected-preview">
-      <span>Selected:</span>
-      <span id="preview-dot"></span>
-      <span id="preview-hex">#ef4444</span>
+      <div id="preview-dot"></div>
+      <span id="preview-hex"></span>
     </div>
   </div>
 
@@ -275,17 +304,26 @@
   <div id="cart-panel">
     <div id="cart-header">
       <div id="cart-title">
-        Canvas Cart
+        <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="7" cy="17" r="1.5"/><circle cx="14" cy="17" r="1.5"/>
+          <path d="M1 1h2.5l2 10h9l2-7H5"/>
+        </svg>
+        Cart
         <span id="cart-count-badge">0</span>
       </div>
-      <div id="cart-btns">
-        <button id="btn-clear" disabled>Clear</button>
-        <button id="btn-apply" disabled>Apply all</button>
+      <div id="cart-header-right">
+        <span id="slot-chip">slot in …</span>
+        <div id="cart-btns">
+          <button id="btn-clear" disabled>Clear</button>
+          <button id="btn-apply" disabled>Apply All</button>
+        </div>
       </div>
     </div>
+
     <div id="cart-empty">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-1.5 7h11"/>
+      <svg width="28" height="28" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="7" cy="17" r="1.5"/><circle cx="14" cy="17" r="1.5"/>
+        <path d="M1 1h2.5l2 10h9l2-7H5"/>
       </svg>
       Click pixels on the canvas to add them to your cart,<br>then apply all at once.
     </div>
@@ -300,7 +338,11 @@
 
   <script>
     const GRID_SIZE = 10;
-    const EXPIRE_MS = 10 * 1000;
+    const SLOT_MS   = 10 * 1000;
+
+    // Slot helpers — identical logic to server, derived from Unix epoch
+    function currentSlotStart() { return Math.floor(Date.now() / SLOT_MS) * SLOT_MS; }
+    function nextSlotStart()    { return currentSlotStart() + SLOT_MS; }
 
     const PALETTE = [
       '#ffffff','#000000','#ef4444','#f97316','#eab308',
@@ -311,9 +353,13 @@
 
     let selectedColor = '#ef4444';
 
-    // Server pixel state
+    // Server-authoritative state per cell
     const cellData = Array(GRID_SIZE * GRID_SIZE).fill(null).map(() => ({
-      color: '#ffffff', expiresAt: null, queueLength: 0
+      color:        '#ffffff',
+      activeUntil:  null,
+      queueLength:  0,
+      pendingColor: null,
+      pendingAt:    null,
     }));
 
     // Cart: Map<index, {color}>
@@ -331,33 +377,52 @@
       cells.push(cell);
     }
 
-    function setCellState(i, { color, expiresAt, queueLength }, animate) {
+    // Apply a server snapshot to one cell
+    function setCellState(i, snap, animate) {
       const d    = cellData[i];
       const cell = cells[i];
-      const wasBlank    = !d.expiresAt;
-      const nowBlank    = !expiresAt;
-      const colorChanged = d.color !== color;
 
-      d.color       = color;
-      d.expiresAt   = expiresAt;
-      d.queueLength = queueLength;
+      const wasBlank    = !d.activeUntil;
+      const nowBlank    = !snap.activeUntil;
+      const colorChanged = d.color !== snap.color;
 
-      cell.style.background = color;
+      d.color        = snap.color;
+      d.activeUntil  = snap.activeUntil;
+      d.queueLength  = snap.queueLength;
+      d.pendingColor = snap.pendingColor;
+      d.pendingAt    = snap.pendingAt;
+
+      cell.style.background = snap.color;
       cell.classList.toggle('blank', nowBlank);
 
-      if (expiresAt) {
-        cell.style.setProperty('--timer', Math.max(0, (expiresAt - Date.now()) / EXPIRE_MS));
+      // Timer bar (scaleX from 1 → 0 over the slot)
+      if (snap.activeUntil) {
+        cell.style.setProperty('--timer', Math.max(0, (snap.activeUntil - Date.now()) / SLOT_MS));
       } else {
         cell.style.setProperty('--timer', 0);
       }
 
-      // Queue badge
-      let badge = cell.querySelector('.badge');
-      if (queueLength > 0) {
-        if (!badge) { badge = document.createElement('div'); badge.className = 'badge'; cell.appendChild(badge); }
-        badge.textContent = queueLength;
+      // Pending bar: shows the NEXT scheduled colour at the top of the cell
+      let pendingBar = cell.querySelector('.pending-bar');
+      if (snap.pendingColor) {
+        if (!pendingBar) {
+          pendingBar = document.createElement('div');
+          pendingBar.className = 'pending-bar';
+          cell.appendChild(pendingBar);
+        }
+        pendingBar.style.background = snap.pendingColor;
       } else {
-        badge?.remove();
+        pendingBar?.remove();
+      }
+
+      // Queue badge: count of items waiting BEYOND the first pending one
+      let qbadge = cell.querySelector('.badge');
+      const extraQueue = snap.queueLength - (snap.pendingColor ? 1 : 0);
+      if (extraQueue > 0) {
+        if (!qbadge) { qbadge = document.createElement('div'); qbadge.className = 'badge'; cell.appendChild(qbadge); }
+        qbadge.textContent = extraQueue;
+      } else {
+        qbadge?.remove();
       }
 
       if (animate) {
@@ -368,19 +433,30 @@
         }
       }
 
-      // Refresh cart-dot in case pixel expired while in cart
       refreshCellCartDot(i);
-
-      // Refresh this pixel's cart entry to update queue status
       if (cart.has(i)) refreshCartEntry(i);
     }
 
-    // Timer bar loop
+    // Reanimate timer bars + slot chip + cart item countdowns
     setInterval(() => {
       const now = Date.now();
+
       cells.forEach((cell, i) => {
-        if (cellData[i].expiresAt)
-          cell.style.setProperty('--timer', Math.max(0, (cellData[i].expiresAt - now) / EXPIRE_MS));
+        if (cellData[i].activeUntil)
+          cell.style.setProperty('--timer', Math.max(0, (cellData[i].activeUntil - now) / SLOT_MS));
+      });
+
+      // Slot chip countdown
+      const ms = nextSlotStart() - now;
+      const s  = Math.ceil(ms / 1000);
+      slotChipEl.textContent = `slot in ${s}s`;
+
+      // Live countdown on each cart-item status
+      document.querySelectorAll('.cart-status[data-at]').forEach(el => {
+        const at   = +el.dataset.at;
+        const wait = Math.max(0, Math.ceil((at - now) / 1000));
+        const span = el.querySelector('.wait-span');
+        if (span) span.textContent = wait > 0 ? ` · in ${wait}s` : ' · now';
       });
     }, 150);
 
@@ -418,14 +494,26 @@
     const dot        = document.getElementById('status-dot');
     const statusText = document.getElementById('status-text');
 
-    ws.addEventListener('open',  () => { dot.classList.add('connected'); statusText.textContent = 'Connected — painting live'; updateCartUI(); });
-    ws.addEventListener('close', () => { dot.classList.remove('connected'); statusText.textContent = 'Disconnected — refresh to reconnect'; updateCartUI(); });
+    ws.addEventListener('open',  () => {
+      dot.classList.add('connected');
+      statusText.textContent = 'Connected — painting live';
+      updateCartUI();
+    });
+    ws.addEventListener('close', () => {
+      dot.classList.remove('connected');
+      statusText.textContent = 'Disconnected — refresh to reconnect';
+      updateCartUI();
+    });
     ws.addEventListener('message', evt => {
       const msg = JSON.parse(evt.data);
       if (msg.type === 'init') {
         msg.pixels.forEach(p => setCellState(p.index, p, false));
       } else if (msg.type === 'update') {
+        // Immediate snapshot update (e.g. pending indicator after scheduling)
         setCellState(msg.index, msg, true);
+      } else if (msg.type === 'batch_update') {
+        // All slot-boundary changes arrive together — update cells in one pass
+        msg.pixels.forEach(p => setCellState(p.index, p, true));
       } else if (msg.type === 'batch_ack') {
         showBatchToast(msg.results);
       }
@@ -459,17 +547,18 @@
     function refreshCellCartDot(index) {
       if (!cart.has(index)) return;
       const cell = cells[index];
-      let dot = cell.querySelector('.cart-dot');
-      if (!dot) { dot = document.createElement('div'); dot.className = 'cart-dot'; cell.appendChild(dot); }
-      dot.style.background = cart.get(index).color;
+      let cdot = cell.querySelector('.cart-dot');
+      if (!cdot) { cdot = document.createElement('div'); cdot.className = 'cart-dot'; cell.appendChild(cdot); }
+      cdot.style.background = cart.get(index).color;
     }
 
     // ── Cart rendering ────────────────────────────────
-    const cartEmpty = document.getElementById('cart-empty');
-    const cartItems = document.getElementById('cart-items');
-    const badge     = document.getElementById('cart-count-badge');
-    const btnClear  = document.getElementById('btn-clear');
-    const btnApply  = document.getElementById('btn-apply');
+    const cartEmpty  = document.getElementById('cart-empty');
+    const cartItems  = document.getElementById('cart-items');
+    const badge      = document.getElementById('cart-count-badge');
+    const btnClear   = document.getElementById('btn-clear');
+    const btnApply   = document.getElementById('btn-apply');
+    const slotChipEl = document.getElementById('slot-chip');
 
     function updateCartUI() {
       const n = cart.size;
@@ -480,56 +569,55 @@
       btnApply.disabled = n === 0 || ws.readyState !== WebSocket.OPEN;
     }
 
-    function pixelLabel(index) {
-      const row = Math.floor(index / GRID_SIZE) + 1;
-      const col = (index % GRID_SIZE) + 1;
-      return `Line ${row}, Col ${col}`;
-    }
-
-    function cartStatus(index) {
+    // Compute the slot at which a new queue entry for this pixel would land.
+    // Mirrors the server logic so the cart item can show an accurate preview.
+    function estimatedSlot(index) {
       const d = cellData[index];
-      if (!d.expiresAt) return { label: 'Immediate', cls: 'immediate' };
-      const queueLen    = d.queueLength;
-      const scheduledAt = d.expiresAt + queueLen * EXPIRE_MS;
-      const waitMs      = scheduledAt - Date.now();
-      return {
-        label: `Queue #${queueLen + 1} · ${fmtTime(scheduledAt)} (${fmtWait(waitMs)})`,
-        cls: 'queued'
-      };
+      if (d.pendingAt !== null) {
+        // Slot after the last pending entry already registered
+        return d.pendingAt + SLOT_MS * d.queueLength;
+      }
+      if (d.activeUntil !== null) return d.activeUntil;
+      return nextSlotStart();
     }
 
     function renderCartItem(index) {
       const entry = cart.get(index);
       const d     = cellData[index];
-      const { label, cls } = cartStatus(index);
+      const row   = Math.floor(index / GRID_SIZE) + 1;
+      const col   = (index % GRID_SIZE) + 1;
+      const at    = estimatedSlot(index);
+      const wait  = Math.max(0, Math.ceil((at - Date.now()) / 1000));
 
-      const row = document.createElement('div');
-      row.className = 'cart-item';
-      row.dataset.index = index;
+      const li = document.createElement('div');
+      li.className  = 'cart-item';
+      li.dataset.index = index;
 
       const removeBtn = document.createElement('button');
       removeBtn.className = 'cart-remove';
+      removeBtn.title = 'Remove';
       removeBtn.textContent = '×';
       removeBtn.addEventListener('click', () => removeFromCart(index));
 
       const loc = document.createElement('span');
       loc.className = 'cart-loc';
-      loc.textContent = pixelLabel(index);
+      loc.textContent = `Line ${row}, Col ${col}`;
 
       const colors = document.createElement('div');
       colors.className = 'cart-colors';
       colors.innerHTML = `
-        <div class="chip" style="background:${d.color}"></div>
+        <div class="chip" style="background:${d.color || '#f0f0f8'}"></div>
         <span class="cart-arrow">→</span>
         <div class="chip" style="background:${entry.color}"></div>
       `;
 
       const status = document.createElement('span');
-      status.className = `cart-status ${cls}`;
-      status.textContent = label;
+      status.className = 'cart-status';
+      status.dataset.at = at;
+      status.innerHTML = `<strong>${fmtTime(at)}</strong><span class="wait-span"> · in ${wait}s</span>`;
 
-      row.append(removeBtn, loc, colors, status);
-      cartItems.appendChild(row);
+      li.append(removeBtn, loc, colors, status);
+      cartItems.appendChild(li);
     }
 
     function refreshCartEntry(index) {
@@ -537,7 +625,6 @@
       if (!existing) return;
       existing.remove();
       renderCartItem(index);
-      // Re-sort DOM to match cart insertion order
       const sorted = [...cart.keys()];
       sorted.forEach(i => {
         const el = document.querySelector(`.cart-item[data-index="${i}"]`);
@@ -553,17 +640,10 @@
     btnApply.addEventListener('click', () => {
       if (ws.readyState !== WebSocket.OPEN || cart.size === 0) return;
       const items = [...cart.entries()].map(([index, { color }]) => ({ index, color }));
-
-      // Clear cart first so refreshCartEntry inside setCellState is a no-op
       [...cart.keys()].forEach(removeFromCart);
-
-      // Optimistic update: paint blank pixels immediately without waiting for server round-trip
-      items.forEach(({ index, color }) => {
-        if (!cellData[index].expiresAt) {
-          setCellState(index, { color, expiresAt: Date.now() + EXPIRE_MS, queueLength: 0 }, true);
-        }
-      });
-
+      // Server will broadcast 'update' snapshots with pendingColor set, so
+      // cells will immediately show the pulsing pending bar without us needing
+      // to guess the exact scheduled time locally.
       ws.send(JSON.stringify({ type: 'batch_paint', items }));
     });
 
@@ -574,22 +654,14 @@
     let toastTimer;
 
     function showBatchToast(results) {
-      const immediate = results.filter(r => r.immediate).length;
-      const queued    = results.filter(r => !r.immediate);
+      toastTitle.textContent = `${results.length} pixel${results.length !== 1 ? 's' : ''} scheduled`;
+      toastLines.innerHTML = '';
 
-      toastTitle.textContent = `${results.length} pixel${results.length > 1 ? 's' : ''} applied`;
-      toastLines.innerHTML   = '';
-
-      if (immediate > 0) {
+      results.forEach(r => {
         const l = document.createElement('div');
         l.className = 'toast-line';
-        l.innerHTML = `<strong>${immediate}</strong> painted immediately`;
-        toastLines.appendChild(l);
-      }
-      queued.forEach(r => {
-        const l = document.createElement('div');
-        l.className = 'toast-line';
-        l.innerHTML = `${pixelLabel(r.index)} → queue #${r.queuePosition}, appears at <strong>${fmtTime(r.scheduledAt)}</strong>`;
+        const wait = Math.max(0, Math.ceil((r.scheduledAt - Date.now()) / 1000));
+        l.innerHTML = `${pixelLabel(r.index)} → <strong>${fmtTime(r.scheduledAt)}</strong>${wait > 0 ? ` <span class="wait-span">(in ${wait}s)</span>` : ''}`;
         toastLines.appendChild(l);
       });
 
@@ -599,15 +671,11 @@
     }
 
     // ── Helpers ───────────────────────────────────────
+    function pixelLabel(index) {
+      return `Line ${Math.floor(index / GRID_SIZE) + 1}, Col ${(index % GRID_SIZE) + 1}`;
+    }
     function fmtTime(ts) {
       return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    }
-    function fmtWait(ms) {
-      if (ms <= 0) return 'soon';
-      const s = Math.round(ms / 1000);
-      if (s < 60) return `${s}s`;
-      const m = Math.floor(s / 60), r = s % 60;
-      return r > 0 ? `${m}m ${r}s` : `${m}m`;
     }
   </script>
 </body>
