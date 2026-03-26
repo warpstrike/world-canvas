@@ -12,22 +12,18 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       background: #0f0f13;
       font-family: 'Segoe UI', system-ui, sans-serif;
       color: #e8e8f0;
-      gap: 28px;
-      padding: 24px;
+      gap: 24px;
+      padding: 28px 24px 48px;
     }
 
-    header { text-align: center; }
+    header { text-align: center; margin-top: 4px; }
     header h1 {
-      font-size: 2rem;
-      font-weight: 700;
+      font-size: 2rem; font-weight: 700;
       background: linear-gradient(135deg, #a78bfa, #60a5fa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
     header p { margin-top: 6px; color: #6b6b80; font-size: 0.88rem; }
 
@@ -54,31 +50,38 @@
     }
 
     .cell {
-      width: 54px;
-      height: 54px;
+      width: 54px; height: 54px;
       border-radius: 5px;
       background: #f0f0f8;
-      cursor: crosshair;
+      cursor: pointer;
       position: relative;
       overflow: hidden;
       border: 1px solid rgba(0,0,0,0.06);
       transition: transform 0.08s, box-shadow 0.08s;
     }
+    .cell:hover { transform: scale(1.08); z-index: 2; }
 
-    .cell:hover {
-      transform: scale(1.1);
-      z-index: 2;
-      box-shadow: 0 0 0 2.5px #a78bfa, 0 4px 16px rgba(167,139,250,0.3);
+    /* Selected ring + preview dot */
+    .cell.selected {
+      box-shadow: 0 0 0 3px #a78bfa, 0 0 12px rgba(167,139,250,0.4);
+      z-index: 1;
+    }
+    .cell .cart-dot {
+      position: absolute;
+      bottom: 4px; left: 4px;
+      width: 14px; height: 14px;
+      border-radius: 3px;
+      border: 1.5px solid rgba(255,255,255,0.6);
+      pointer-events: none;
     }
 
-    /* Timer bar — shrinks left-to-right using scaleX */
+    /* Timer bar */
     .cell::after {
       content: '';
       position: absolute;
-      bottom: 0; left: 0; right: 0;
-      height: 4px;
+      bottom: 0; left: 0; right: 0; height: 4px;
       background: rgba(255,255,255,0.75);
-      box-shadow: 0 0 6px rgba(255,255,255,0.4);
+      box-shadow: 0 0 5px rgba(255,255,255,0.35);
       transform-origin: left center;
       transform: scaleX(var(--timer, 0));
       transition: transform 0.15s linear;
@@ -89,36 +92,29 @@
     .cell .badge {
       position: absolute;
       top: 3px; right: 3px;
-      background: rgba(167, 139, 250, 0.92);
-      color: #fff;
-      font-size: 9px;
-      font-weight: 700;
+      background: rgba(167,139,250,0.92);
+      color: #fff; font-size: 9px; font-weight: 700;
       min-width: 16px; height: 16px;
       border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
-      padding: 0 3px;
-      pointer-events: none;
-      line-height: 1;
+      padding: 0 3px; pointer-events: none;
     }
 
-    .cell.painted { animation: pop 0.2s ease-out; }
+    .cell.painted  { animation: pop  0.2s ease-out; }
     .cell.clearing { animation: puff 0.35s ease-out; }
-
-    @keyframes pop   { 0% { transform: scale(1.3); } 100% { transform: scale(1); } }
-    @keyframes puff  {
-      0%   { transform: scale(1); }
-      40%  { transform: scale(1.18); opacity: 0.6; }
-      100% { transform: scale(1); opacity: 1; }
+    @keyframes pop  { 0% { transform: scale(1.3); } 100% { transform: scale(1); } }
+    @keyframes puff {
+      0%  { transform: scale(1); }
+      40% { transform: scale(1.18); opacity: 0.5; }
+      100%{ transform: scale(1); opacity: 1; }
     }
 
     /* ── Palette ──────────────────────────────── */
     #palette-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-
     #swatches {
       display: flex; flex-wrap: wrap; justify-content: center;
-      gap: 8px; max-width: 600px;
+      gap: 8px; max-width: 620px;
     }
-
     .swatch {
       width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
       border: 3px solid transparent;
@@ -126,133 +122,133 @@
     }
     .swatch:hover { transform: scale(1.15); }
     .swatch.active {
-      border-color: #a78bfa;
-      box-shadow: 0 0 0 2px #a78bfa55;
-      transform: scale(1.2);
+      border-color: #a78bfa; box-shadow: 0 0 0 2px #a78bfa55; transform: scale(1.2);
     }
-
     #custom-color-wrap {
-      display: flex; align-items: center; gap: 10px;
-      color: #6b6b80; font-size: 0.85rem;
+      display: flex; align-items: center; gap: 10px; color: #6b6b80; font-size: 0.85rem;
     }
     #custom-color {
-      width: 36px; height: 36px; border: none;
-      border-radius: 50%; cursor: pointer; background: none; padding: 0;
+      width: 36px; height: 36px; border: none; border-radius: 50%; cursor: pointer; background: none; padding: 0;
     }
     #custom-color::-webkit-color-swatch-wrapper { padding: 0; border-radius: 50%; }
     #custom-color::-webkit-color-swatch { border: 3px solid #2a2a3e; border-radius: 50%; }
+    #selected-preview { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: #6b6b80; }
+    #preview-dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #2a2a3e; transition: background 0.15s; }
 
-    #selected-preview {
-      display: flex; align-items: center; gap: 10px;
-      font-size: 0.85rem; color: #6b6b80;
-    }
-    #preview-dot {
-      width: 20px; height: 20px; border-radius: 50%;
-      border: 2px solid #2a2a3e; transition: background 0.15s;
-    }
-
-    /* ── Popup ────────────────────────────────── */
-    #overlay {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(5px);
-      -webkit-backdrop-filter: blur(5px);
-      z-index: 100;
-      align-items: center;
-      justify-content: center;
-    }
-    #overlay.show { display: flex; }
-
-    #popup {
+    /* ── Cart panel ───────────────────────────── */
+    #cart-panel {
+      width: 100%; max-width: 620px;
       background: #1a1a27;
-      border: 1px solid #2e2e44;
-      border-radius: 18px;
-      padding: 26px 24px;
-      width: 340px;
-      box-shadow: 0 30px 70px rgba(0,0,0,0.55), 0 0 0 1px rgba(167,139,250,0.08);
-      animation: slideUp 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    @keyframes slideUp {
-      from { transform: translateY(14px) scale(0.97); opacity: 0; }
-      to   { transform: translateY(0) scale(1); opacity: 1; }
-    }
-
-    #popup h2 {
-      font-size: 1.1rem; font-weight: 700;
-      background: linear-gradient(135deg, #a78bfa, #60a5fa);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 20px;
-    }
-
-    .popup-colors {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 18px;
-    }
-    .popup-color-block {
-      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 7px;
-    }
-    .popup-color-block label {
-      font-size: 0.7rem; color: #6b6b80;
-      text-transform: uppercase; letter-spacing: 0.06em;
-    }
-    .color-chip {
-      width: 100%; height: 50px; border-radius: 10px;
-      border: 1.5px solid rgba(255,255,255,0.08);
-    }
-    .popup-arrow { color: #a78bfa; font-size: 1.3rem; padding-top: 20px; flex-shrink: 0; }
-
-    .popup-info {
-      background: #12121c;
       border: 1px solid #2a2a3e;
-      border-radius: 10px;
-      padding: 12px 14px;
-      margin-bottom: 20px;
-      display: flex; flex-direction: column; gap: 8px;
+      border-radius: 14px;
+      overflow: hidden;
     }
-    .info-row {
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    .info-row .lbl { font-size: 0.82rem; color: #6b6b80; }
-    .info-row .val { font-size: 0.88rem; color: #e8e8f0; font-weight: 600; }
 
-    .popup-actions { display: flex; gap: 10px; }
-    .popup-actions button {
-      flex: 1; padding: 11px 0; border-radius: 9px;
-      font-size: 0.9rem; font-weight: 600; cursor: pointer;
-      border: none; transition: opacity 0.15s, transform 0.1s;
+    #cart-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid #2a2a3e;
     }
-    .popup-actions button:hover { opacity: 0.88; transform: translateY(-1px); }
-    .popup-actions button:active { transform: translateY(0); }
-    #btn-cancel  { background: #252535; color: #8888a0; }
-    #btn-confirm { background: linear-gradient(135deg, #a78bfa, #60a5fa); color: #fff; }
+    #cart-title {
+      font-size: 0.92rem; font-weight: 700; color: #c8c8e0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    #cart-count-badge {
+      background: linear-gradient(135deg, #a78bfa, #60a5fa);
+      color: #fff; font-size: 0.72rem; font-weight: 700;
+      padding: 2px 7px; border-radius: 10px;
+      display: none;
+    }
+    #cart-count-badge.show { display: inline-block; }
+
+    #cart-btns { display: flex; gap: 8px; }
+    #cart-btns button {
+      padding: 7px 14px; border-radius: 7px; font-size: 0.82rem;
+      font-weight: 600; cursor: pointer; border: none;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    #cart-btns button:disabled { opacity: 0.3; cursor: not-allowed; }
+    #cart-btns button:not(:disabled):hover { opacity: 0.88; transform: translateY(-1px); }
+    #btn-clear { background: #252535; color: #8888a0; }
+    #btn-apply { background: linear-gradient(135deg, #a78bfa, #60a5fa); color: #fff; }
+
+    /* Empty state */
+    #cart-empty {
+      padding: 28px 20px;
+      text-align: center;
+      color: #4a4a60;
+      font-size: 0.87rem;
+      line-height: 1.6;
+    }
+    #cart-empty svg { display: block; margin: 0 auto 10px; opacity: 0.3; }
+
+    /* Cart items list */
+    #cart-items { display: flex; flex-direction: column; }
+
+    .cart-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 16px;
+      border-top: 1px solid #22223040;
+      transition: background 0.1s;
+      animation: fadeIn 0.18s ease-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+    .cart-item:hover { background: rgba(255,255,255,0.02); }
+
+    .cart-remove {
+      flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+      background: #2a2a3e; color: #6b6b80; border: none; cursor: pointer;
+      font-size: 13px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .cart-remove:hover { background: #ef444430; color: #ef4444; }
+
+    .cart-loc {
+      font-size: 0.82rem; font-weight: 600; color: #a0a0c0;
+      white-space: nowrap; min-width: 100px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cart-colors {
+      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    }
+    .chip {
+      width: 24px; height: 24px; border-radius: 5px;
+      border: 1.5px solid rgba(255,255,255,0.1); flex-shrink: 0;
+    }
+    .cart-arrow { color: #4a4a60; font-size: 0.9rem; }
+
+    .cart-status {
+      flex: 1; font-size: 0.78rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .cart-status.immediate { color: #22c55e; }
+    .cart-status.queued    { color: #f59e0b; }
 
     /* ── Toast ────────────────────────────────── */
     #toast {
       position: fixed; bottom: 24px; right: 24px;
-      background: #1a1a27;
-      border: 1px solid #2e2e44;
-      border-radius: 12px;
-      padding: 14px 18px;
+      background: #1a1a27; border: 1px solid #2e2e44;
+      border-radius: 12px; padding: 14px 18px;
       font-size: 0.85rem; color: #c8c8e0;
       box-shadow: 0 8px 32px rgba(0,0,0,0.45);
-      max-width: 290px;
+      max-width: 300px;
       transform: translateY(80px); opacity: 0;
-      transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1), opacity 0.3s ease;
-      z-index: 200;
-      pointer-events: none;
+      transition: transform 0.3s cubic-bezier(0.34,1.2,0.64,1), opacity 0.3s ease;
+      z-index: 200; pointer-events: none;
     }
     #toast.show { transform: translateY(0); opacity: 1; }
     #toast .toast-title { font-weight: 700; color: #a78bfa; margin-bottom: 4px; }
-    #toast .toast-body  { color: #8888a0; font-size: 0.8rem; }
+    #toast .toast-line  { color: #8888a0; font-size: 0.8rem; margin-top: 2px; }
+    #toast .toast-line strong { color: #e8e8f0; font-weight: 600; }
   </style>
 </head>
 <body>
 
   <header>
     <h1>World Canvas</h1>
-    <p>Each pixel lasts 1 minute. Paint together in real time.</p>
+    <p>Select pixels, pick a color, apply together. Each pixel lasts 10 seconds.</p>
   </header>
 
   <div id="status">
@@ -275,51 +271,36 @@
     </div>
   </div>
 
-  <!-- Confirmation popup -->
-  <div id="overlay">
-    <div id="popup">
-      <h2>Pixel is busy</h2>
-      <div class="popup-colors">
-        <div class="popup-color-block">
-          <label>Now</label>
-          <div class="color-chip" id="popup-current"></div>
-        </div>
-        <div class="popup-arrow">→</div>
-        <div class="popup-color-block">
-          <label>Your color</label>
-          <div class="color-chip" id="popup-yours"></div>
-        </div>
+  <!-- Cart panel -->
+  <div id="cart-panel">
+    <div id="cart-header">
+      <div id="cart-title">
+        Canvas Cart
+        <span id="cart-count-badge">0</span>
       </div>
-      <div class="popup-info">
-        <div class="info-row">
-          <span class="lbl">Appears at</span>
-          <span class="val" id="popup-time">—</span>
-        </div>
-        <div class="info-row">
-          <span class="lbl">Wait</span>
-          <span class="val" id="popup-wait">—</span>
-        </div>
-        <div class="info-row">
-          <span class="lbl">Queue position</span>
-          <span class="val" id="popup-pos">—</span>
-        </div>
-      </div>
-      <div class="popup-actions">
-        <button id="btn-cancel">Cancel</button>
-        <button id="btn-confirm">Add to queue</button>
+      <div id="cart-btns">
+        <button id="btn-clear" disabled>Clear</button>
+        <button id="btn-apply" disabled>Apply all</button>
       </div>
     </div>
+    <div id="cart-empty">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-1.5 7h11"/>
+      </svg>
+      Click pixels on the canvas to add them to your cart,<br>then apply all at once.
+    </div>
+    <div id="cart-items"></div>
   </div>
 
-  <!-- Toast notification -->
+  <!-- Toast -->
   <div id="toast">
     <div class="toast-title" id="toast-title"></div>
-    <div class="toast-body"  id="toast-body"></div>
+    <div id="toast-lines"></div>
   </div>
 
   <script>
-    const GRID_SIZE  = 10;
-    const EXPIRE_MS  = 60 * 1000;
+    const GRID_SIZE = 10;
+    const EXPIRE_MS = 10 * 1000;
 
     const PALETTE = [
       '#ffffff','#000000','#ef4444','#f97316','#eab308',
@@ -330,12 +311,15 @@
 
     let selectedColor = '#ef4444';
 
-    // Local cell state
+    // Server pixel state
     const cellData = Array(GRID_SIZE * GRID_SIZE).fill(null).map(() => ({
       color: '#ffffff', expiresAt: null, queueLength: 0
     }));
 
-    // ── Build grid ────────────────────────────────────
+    // Cart: Map<index, {color}>
+    const cart = new Map();
+
+    // ── Grid ──────────────────────────────────────────
     const gridEl = document.getElementById('grid');
     const cells  = [];
 
@@ -350,9 +334,8 @@
     function setCellState(i, { color, expiresAt, queueLength }, animate) {
       const d    = cellData[i];
       const cell = cells[i];
-
-      const wasBlank   = !d.expiresAt;
-      const nowBlank   = !expiresAt;
+      const wasBlank    = !d.expiresAt;
+      const nowBlank    = !expiresAt;
       const colorChanged = d.color !== color;
 
       d.color       = color;
@@ -362,10 +345,8 @@
       cell.style.background = color;
       cell.classList.toggle('blank', nowBlank);
 
-      // Timer bar initial value
       if (expiresAt) {
-        const progress = Math.max(0, (expiresAt - Date.now()) / EXPIRE_MS);
-        cell.style.setProperty('--timer', progress);
+        cell.style.setProperty('--timer', Math.max(0, (expiresAt - Date.now()) / EXPIRE_MS));
       } else {
         cell.style.setProperty('--timer', 0);
       }
@@ -379,31 +360,27 @@
         badge?.remove();
       }
 
-      // Animations
       if (animate) {
         if (!wasBlank && nowBlank) {
-          // Pixel expired → cleared
-          cell.classList.remove('clearing');
-          void cell.offsetWidth;
-          cell.classList.add('clearing');
+          cell.classList.remove('clearing'); void cell.offsetWidth; cell.classList.add('clearing');
         } else if (colorChanged && !nowBlank) {
-          // New color painted
-          cell.classList.remove('painted');
-          void cell.offsetWidth;
-          cell.classList.add('painted');
+          cell.classList.remove('painted');  void cell.offsetWidth; cell.classList.add('painted');
         }
       }
+
+      // Refresh cart-dot in case pixel expired while in cart
+      refreshCellCartDot(i);
+
+      // Refresh this pixel's cart entry to update queue status
+      if (cart.has(i)) refreshCartEntry(i);
     }
 
-    // ── Timer bar animation loop (every 150ms) ────────
+    // Timer bar loop
     setInterval(() => {
       const now = Date.now();
       cells.forEach((cell, i) => {
-        const { expiresAt } = cellData[i];
-        if (expiresAt) {
-          const progress = Math.max(0, (expiresAt - now) / EXPIRE_MS);
-          cell.style.setProperty('--timer', progress);
-        }
+        if (cellData[i].expiresAt)
+          cell.style.setProperty('--timer', Math.max(0, (cellData[i].expiresAt - now) / EXPIRE_MS));
       });
     }, 150);
 
@@ -417,7 +394,6 @@
       s.addEventListener('click', () => selectColor(color));
       swatchesEl.appendChild(s);
     });
-
     document.getElementById('custom-color').addEventListener('input', e => selectColor(e.target.value));
 
     function selectColor(color) {
@@ -427,103 +403,207 @@
       );
       document.getElementById('preview-dot').style.background = color;
       document.getElementById('preview-hex').textContent = color;
+      // Update cart dots and entries for any selected cells
+      cart.forEach((_, i) => {
+        cart.set(i, { color });
+        refreshCellCartDot(i);
+        refreshCartEntry(i);
+      });
     }
     selectColor('#ef4444');
 
     // ── WebSocket ─────────────────────────────────────
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    const ws = new WebSocket(`${proto}://${location.host}`);
-
+    const ws    = new WebSocket(`${proto}://${location.host}`);
     const dot        = document.getElementById('status-dot');
     const statusText = document.getElementById('status-text');
 
-    ws.addEventListener('open', () => {
-      dot.classList.add('connected');
-      statusText.textContent = 'Connected — painting live';
-    });
-    ws.addEventListener('close', () => {
-      dot.classList.remove('connected');
-      statusText.textContent = 'Disconnected — refresh to reconnect';
-    });
+    ws.addEventListener('open',  () => { dot.classList.add('connected'); statusText.textContent = 'Connected — painting live'; updateCartUI(); });
+    ws.addEventListener('close', () => { dot.classList.remove('connected'); statusText.textContent = 'Disconnected — refresh to reconnect'; updateCartUI(); });
     ws.addEventListener('message', evt => {
       const msg = JSON.parse(evt.data);
       if (msg.type === 'init') {
         msg.pixels.forEach(p => setCellState(p.index, p, false));
       } else if (msg.type === 'update') {
         setCellState(msg.index, msg, true);
-      } else if (msg.type === 'queue_ack') {
-        showToast(msg);
+      } else if (msg.type === 'batch_ack') {
+        showBatchToast(msg.results);
       }
     });
 
-    // ── Cell click ────────────────────────────────────
-    let pending = null;
-
+    // ── Cell click (cart toggle) ──────────────────────
     function onCellClick(index) {
-      if (ws.readyState !== WebSocket.OPEN) return;
-      const d = cellData[index];
-
-      if (!d.expiresAt) {
-        // Blank pixel — paint immediately
-        ws.send(JSON.stringify({ type: 'paint', index, color: selectedColor }));
+      if (cart.has(index)) {
+        removeFromCart(index);
       } else {
-        // Busy pixel — show confirmation popup
-        const queueLen    = d.queueLength;
-        const scheduledAt = d.expiresAt + queueLen * EXPIRE_MS;
-        const waitMs      = scheduledAt - Date.now();
-
-        pending = { index, color: selectedColor };
-        openPopup({ currentColor: d.color, newColor: selectedColor, scheduledAt, queuePos: queueLen + 1, waitMs });
+        addToCart(index);
       }
     }
 
-    // ── Popup ─────────────────────────────────────────
-    const overlay = document.getElementById('overlay');
-
-    function openPopup({ currentColor, newColor, scheduledAt, queuePos, waitMs }) {
-      document.getElementById('popup-current').style.background = currentColor;
-      document.getElementById('popup-yours').style.background   = newColor;
-      document.getElementById('popup-time').textContent  = fmtTime(scheduledAt);
-      document.getElementById('popup-wait').textContent  = fmtWait(waitMs);
-      document.getElementById('popup-pos').textContent   = `#${queuePos}`;
-      overlay.classList.add('show');
+    function addToCart(index) {
+      cart.set(index, { color: selectedColor });
+      cells[index].classList.add('selected');
+      refreshCellCartDot(index);
+      renderCartItem(index);
+      updateCartUI();
     }
 
-    function closePopup() {
-      overlay.classList.remove('show');
-      pending = null;
+    function removeFromCart(index) {
+      cart.delete(index);
+      cells[index].classList.remove('selected');
+      cells[index].querySelector('.cart-dot')?.remove();
+      document.querySelector(`.cart-item[data-index="${index}"]`)?.remove();
+      updateCartUI();
     }
 
-    document.getElementById('btn-cancel').addEventListener('click', closePopup);
-    overlay.addEventListener('click', e => { if (e.target === overlay) closePopup(); });
+    function refreshCellCartDot(index) {
+      if (!cart.has(index)) return;
+      const cell = cells[index];
+      let dot = cell.querySelector('.cart-dot');
+      if (!dot) { dot = document.createElement('div'); dot.className = 'cart-dot'; cell.appendChild(dot); }
+      dot.style.background = cart.get(index).color;
+    }
 
-    document.getElementById('btn-confirm').addEventListener('click', () => {
-      if (!pending) return;
-      ws.send(JSON.stringify({ type: 'paint', index: pending.index, color: pending.color }));
-      closePopup();
+    // ── Cart rendering ────────────────────────────────
+    const cartEmpty = document.getElementById('cart-empty');
+    const cartItems = document.getElementById('cart-items');
+    const badge     = document.getElementById('cart-count-badge');
+    const btnClear  = document.getElementById('btn-clear');
+    const btnApply  = document.getElementById('btn-apply');
+
+    function updateCartUI() {
+      const n = cart.size;
+      cartEmpty.style.display = n === 0 ? '' : 'none';
+      badge.textContent = n;
+      badge.classList.toggle('show', n > 0);
+      btnClear.disabled = n === 0;
+      btnApply.disabled = n === 0 || ws.readyState !== WebSocket.OPEN;
+    }
+
+    function pixelLabel(index) {
+      const row = Math.floor(index / GRID_SIZE) + 1;
+      const col = (index % GRID_SIZE) + 1;
+      return `Line ${row}, Col ${col}`;
+    }
+
+    function cartStatus(index) {
+      const d = cellData[index];
+      if (!d.expiresAt) return { label: 'Immediate', cls: 'immediate' };
+      const queueLen    = d.queueLength;
+      const scheduledAt = d.expiresAt + queueLen * EXPIRE_MS;
+      const waitMs      = scheduledAt - Date.now();
+      return {
+        label: `Queue #${queueLen + 1} · ${fmtTime(scheduledAt)} (${fmtWait(waitMs)})`,
+        cls: 'queued'
+      };
+    }
+
+    function renderCartItem(index) {
+      const entry = cart.get(index);
+      const d     = cellData[index];
+      const { label, cls } = cartStatus(index);
+
+      const row = document.createElement('div');
+      row.className = 'cart-item';
+      row.dataset.index = index;
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'cart-remove';
+      removeBtn.textContent = '×';
+      removeBtn.addEventListener('click', () => removeFromCart(index));
+
+      const loc = document.createElement('span');
+      loc.className = 'cart-loc';
+      loc.textContent = pixelLabel(index);
+
+      const colors = document.createElement('div');
+      colors.className = 'cart-colors';
+      colors.innerHTML = `
+        <div class="chip" style="background:${d.color}"></div>
+        <span class="cart-arrow">→</span>
+        <div class="chip" style="background:${entry.color}"></div>
+      `;
+
+      const status = document.createElement('span');
+      status.className = `cart-status ${cls}`;
+      status.textContent = label;
+
+      row.append(removeBtn, loc, colors, status);
+      cartItems.appendChild(row);
+    }
+
+    function refreshCartEntry(index) {
+      const existing = document.querySelector(`.cart-item[data-index="${index}"]`);
+      if (!existing) return;
+      existing.remove();
+      renderCartItem(index);
+      // Re-sort DOM to match cart insertion order
+      const sorted = [...cart.keys()];
+      sorted.forEach(i => {
+        const el = document.querySelector(`.cart-item[data-index="${i}"]`);
+        if (el) cartItems.appendChild(el);
+      });
+    }
+
+    // ── Cart actions ──────────────────────────────────
+    btnClear.addEventListener('click', () => {
+      [...cart.keys()].forEach(removeFromCart);
+    });
+
+    btnApply.addEventListener('click', () => {
+      if (ws.readyState !== WebSocket.OPEN || cart.size === 0) return;
+      const items = [...cart.entries()].map(([index, { color }]) => ({ index, color }));
+
+      // Clear cart first so refreshCartEntry inside setCellState is a no-op
+      [...cart.keys()].forEach(removeFromCart);
+
+      // Optimistic update: paint blank pixels immediately without waiting for server round-trip
+      items.forEach(({ index, color }) => {
+        if (!cellData[index].expiresAt) {
+          setCellState(index, { color, expiresAt: Date.now() + EXPIRE_MS, queueLength: 0 }, true);
+        }
+      });
+
+      ws.send(JSON.stringify({ type: 'batch_paint', items }));
     });
 
     // ── Toast ─────────────────────────────────────────
     const toastEl    = document.getElementById('toast');
     const toastTitle = document.getElementById('toast-title');
-    const toastBody  = document.getElementById('toast-body');
+    const toastLines = document.getElementById('toast-lines');
     let toastTimer;
 
-    function showToast({ scheduledAt, queuePosition, color }) {
-      toastTitle.textContent = `Queued at #${queuePosition}`;
-      toastBody.innerHTML    = `Your color appears at <strong style="color:#e8e8f0">${fmtTime(scheduledAt)}</strong>`;
+    function showBatchToast(results) {
+      const immediate = results.filter(r => r.immediate).length;
+      const queued    = results.filter(r => !r.immediate);
+
+      toastTitle.textContent = `${results.length} pixel${results.length > 1 ? 's' : ''} applied`;
+      toastLines.innerHTML   = '';
+
+      if (immediate > 0) {
+        const l = document.createElement('div');
+        l.className = 'toast-line';
+        l.innerHTML = `<strong>${immediate}</strong> painted immediately`;
+        toastLines.appendChild(l);
+      }
+      queued.forEach(r => {
+        const l = document.createElement('div');
+        l.className = 'toast-line';
+        l.innerHTML = `${pixelLabel(r.index)} → queue #${r.queuePosition}, appears at <strong>${fmtTime(r.scheduledAt)}</strong>`;
+        toastLines.appendChild(l);
+      });
+
       toastEl.classList.add('show');
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toastEl.classList.remove('show'), 4500);
+      toastTimer = setTimeout(() => toastEl.classList.remove('show'), 5000);
     }
 
     // ── Helpers ───────────────────────────────────────
     function fmtTime(ts) {
       return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
-
     function fmtWait(ms) {
-      if (ms <= 0) return 'Soon';
+      if (ms <= 0) return 'soon';
       const s = Math.round(ms / 1000);
       if (s < 60) return `${s}s`;
       const m = Math.floor(s / 60), r = s % 60;

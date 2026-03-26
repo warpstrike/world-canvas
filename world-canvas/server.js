@@ -8,7 +8,7 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 const GRID_SIZE = 10;
-const EXPIRE_MS = 60 * 1000; // 1 minute
+const EXPIRE_MS = 10 * 1000; // 10 seconds
 
 // Each pixel: { color, expiresAt: timestamp|null, queue: [{color, scheduledAt}] }
 const pixels = Array(GRID_SIZE * GRID_SIZE).fill(null).map(() => ({
@@ -61,40 +61,38 @@ wss.on('connection', ws => {
     let msg;
     try { msg = JSON.parse(data); } catch { return; }
 
-    if (msg.type !== 'paint') return;
+    if (msg.type !== 'batch_paint') return;
+    if (!Array.isArray(msg.items) || msg.items.length === 0) return;
 
-    const { index, color } = msg;
-    if (typeof index !== 'number' || index < 0 || index >= pixels.length) return;
-    if (!/^#[0-9a-fA-F]{6}$/.test(color)) return;
+    const results = [];
 
-    const p = pixels[index];
+    for (const item of msg.items) {
+      const { index, color } = item;
+      if (typeof index !== 'number' || index < 0 || index >= pixels.length) continue;
+      if (!/^#[0-9a-fA-F]{6}$/.test(color)) continue;
 
-    if (!p.expiresAt) {
-      // Blank pixel — paint immediately
-      p.color = color;
-      p.expiresAt = Date.now() + EXPIRE_MS;
-      broadcast({ type: 'update', ...snapshot(index) });
-    } else {
-      // Pixel is taken — queue it
-      const lastSlotEndsAt = p.queue.length > 0
-        ? p.queue[p.queue.length - 1].scheduledAt + EXPIRE_MS
-        : p.expiresAt;
+      const p = pixels[index];
 
-      const scheduledAt = lastSlotEndsAt;
-      p.queue.push({ color, scheduledAt });
+      if (!p.expiresAt) {
+        // Blank — paint immediately
+        p.color = color;
+        p.expiresAt = Date.now() + EXPIRE_MS;
+        broadcast({ type: 'update', ...snapshot(index) });
+        results.push({ index, immediate: true });
+      } else {
+        // Taken — queue it
+        const lastSlotEndsAt = p.queue.length > 0
+          ? p.queue[p.queue.length - 1].scheduledAt + EXPIRE_MS
+          : p.expiresAt;
 
-      // Acknowledge only to this client
-      ws.send(JSON.stringify({
-        type: 'queue_ack',
-        index,
-        color,
-        scheduledAt,
-        queuePosition: p.queue.length
-      }));
-
-      // Broadcast updated queue length to all
-      broadcast({ type: 'update', ...snapshot(index) });
+        const scheduledAt = lastSlotEndsAt;
+        p.queue.push({ color, scheduledAt });
+        broadcast({ type: 'update', ...snapshot(index) });
+        results.push({ index, immediate: false, scheduledAt, queuePosition: p.queue.length });
+      }
     }
+
+    ws.send(JSON.stringify({ type: 'batch_ack', results }));
   });
 });
 
