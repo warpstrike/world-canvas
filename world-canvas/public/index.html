@@ -16,114 +16,115 @@
       background: #0f0f13;
       font-family: 'Segoe UI', system-ui, sans-serif;
       color: #e8e8f0;
-      gap: 32px;
+      gap: 28px;
       padding: 24px;
     }
 
-    header {
-      text-align: center;
-    }
-
+    header { text-align: center; }
     header h1 {
       font-size: 2rem;
       font-weight: 700;
-      letter-spacing: -0.5px;
       background: linear-gradient(135deg, #a78bfa, #60a5fa);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
-
-    header p {
-      margin-top: 6px;
-      color: #6b6b80;
-      font-size: 0.9rem;
-    }
+    header p { margin-top: 6px; color: #6b6b80; font-size: 0.88rem; }
 
     #status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.8rem;
-      color: #6b6b80;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.8rem; color: #6b6b80;
     }
-
     #status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #ef4444;
-      transition: background 0.3s;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #ef4444; transition: background 0.3s;
     }
-
     #status-dot.connected { background: #22c55e; }
 
-    #canvas-wrap {
-      position: relative;
-    }
-
+    /* ── Grid ─────────────────────────────────── */
     #grid {
       display: grid;
       grid-template-columns: repeat(10, 1fr);
-      gap: 2px;
-      background: #1e1e2e;
+      gap: 3px;
+      background: #1a1a27;
       border: 2px solid #2a2a3e;
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 10px;
-      box-shadow: 0 0 60px rgba(167, 139, 250, 0.08);
+      box-shadow: 0 0 60px rgba(167, 139, 250, 0.07);
     }
 
     .cell {
-      width: 52px;
-      height: 52px;
-      border-radius: 4px;
-      background: #ffffff;
+      width: 54px;
+      height: 54px;
+      border-radius: 5px;
+      background: #f0f0f8;
       cursor: crosshair;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.06);
       transition: transform 0.08s, box-shadow 0.08s;
-      border: 1px solid rgba(255,255,255,0.05);
     }
 
     .cell:hover {
-      transform: scale(1.12);
-      z-index: 1;
-      box-shadow: 0 0 0 2px #a78bfa, 0 4px 16px rgba(167,139,250,0.35);
+      transform: scale(1.1);
+      z-index: 2;
+      box-shadow: 0 0 0 2.5px #a78bfa, 0 4px 16px rgba(167,139,250,0.3);
     }
 
-    .cell.painted {
-      animation: pop 0.18s ease-out;
+    /* Timer bar — shrinks left-to-right using scaleX */
+    .cell::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 4px;
+      background: rgba(255,255,255,0.75);
+      box-shadow: 0 0 6px rgba(255,255,255,0.4);
+      transform-origin: left center;
+      transform: scaleX(var(--timer, 0));
+      transition: transform 0.15s linear;
+    }
+    .cell.blank::after { display: none; }
+
+    /* Queue badge */
+    .cell .badge {
+      position: absolute;
+      top: 3px; right: 3px;
+      background: rgba(167, 139, 250, 0.92);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      min-width: 16px; height: 16px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 3px;
+      pointer-events: none;
+      line-height: 1;
     }
 
-    @keyframes pop {
-      0%  { transform: scale(1.25); }
-      100%{ transform: scale(1); }
+    .cell.painted { animation: pop 0.2s ease-out; }
+    .cell.clearing { animation: puff 0.35s ease-out; }
+
+    @keyframes pop   { 0% { transform: scale(1.3); } 100% { transform: scale(1); } }
+    @keyframes puff  {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.18); opacity: 0.6; }
+      100% { transform: scale(1); opacity: 1; }
     }
 
-    /* Palette */
-    #palette-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-    }
+    /* ── Palette ──────────────────────────────── */
+    #palette-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 
     #swatches {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 8px;
-      max-width: 580px;
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 8px; max-width: 600px;
     }
 
     .swatch {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      cursor: pointer;
+      width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
       border: 3px solid transparent;
       transition: transform 0.1s, border-color 0.1s, box-shadow 0.1s;
     }
-
     .swatch:hover { transform: scale(1.15); }
-
     .swatch.active {
       border-color: #a78bfa;
       box-shadow: 0 0 0 2px #a78bfa55;
@@ -131,48 +132,127 @@
     }
 
     #custom-color-wrap {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #6b6b80;
-      font-size: 0.85rem;
+      display: flex; align-items: center; gap: 10px;
+      color: #6b6b80; font-size: 0.85rem;
     }
-
     #custom-color {
-      width: 36px;
-      height: 36px;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      background: none;
-      padding: 0;
+      width: 36px; height: 36px; border: none;
+      border-radius: 50%; cursor: pointer; background: none; padding: 0;
     }
-
     #custom-color::-webkit-color-swatch-wrapper { padding: 0; border-radius: 50%; }
     #custom-color::-webkit-color-swatch { border: 3px solid #2a2a3e; border-radius: 50%; }
 
     #selected-preview {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.85rem;
-      color: #6b6b80;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.85rem; color: #6b6b80;
+    }
+    #preview-dot {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid #2a2a3e; transition: background 0.15s;
     }
 
-    #preview-dot {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 2px solid #2a2a3e;
-      transition: background 0.15s;
+    /* ── Popup ────────────────────────────────── */
+    #overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
     }
+    #overlay.show { display: flex; }
+
+    #popup {
+      background: #1a1a27;
+      border: 1px solid #2e2e44;
+      border-radius: 18px;
+      padding: 26px 24px;
+      width: 340px;
+      box-shadow: 0 30px 70px rgba(0,0,0,0.55), 0 0 0 1px rgba(167,139,250,0.08);
+      animation: slideUp 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes slideUp {
+      from { transform: translateY(14px) scale(0.97); opacity: 0; }
+      to   { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    #popup h2 {
+      font-size: 1.1rem; font-weight: 700;
+      background: linear-gradient(135deg, #a78bfa, #60a5fa);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 20px;
+    }
+
+    .popup-colors {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 18px;
+    }
+    .popup-color-block {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 7px;
+    }
+    .popup-color-block label {
+      font-size: 0.7rem; color: #6b6b80;
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .color-chip {
+      width: 100%; height: 50px; border-radius: 10px;
+      border: 1.5px solid rgba(255,255,255,0.08);
+    }
+    .popup-arrow { color: #a78bfa; font-size: 1.3rem; padding-top: 20px; flex-shrink: 0; }
+
+    .popup-info {
+      background: #12121c;
+      border: 1px solid #2a2a3e;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 20px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .info-row {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .info-row .lbl { font-size: 0.82rem; color: #6b6b80; }
+    .info-row .val { font-size: 0.88rem; color: #e8e8f0; font-weight: 600; }
+
+    .popup-actions { display: flex; gap: 10px; }
+    .popup-actions button {
+      flex: 1; padding: 11px 0; border-radius: 9px;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      border: none; transition: opacity 0.15s, transform 0.1s;
+    }
+    .popup-actions button:hover { opacity: 0.88; transform: translateY(-1px); }
+    .popup-actions button:active { transform: translateY(0); }
+    #btn-cancel  { background: #252535; color: #8888a0; }
+    #btn-confirm { background: linear-gradient(135deg, #a78bfa, #60a5fa); color: #fff; }
+
+    /* ── Toast ────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #1a1a27;
+      border: 1px solid #2e2e44;
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 0.85rem; color: #c8c8e0;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+      max-width: 290px;
+      transform: translateY(80px); opacity: 0;
+      transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1), opacity 0.3s ease;
+      z-index: 200;
+      pointer-events: none;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast .toast-title { font-weight: 700; color: #a78bfa; margin-bottom: 4px; }
+    #toast .toast-body  { color: #8888a0; font-size: 0.8rem; }
   </style>
 </head>
 <body>
 
   <header>
     <h1>World Canvas</h1>
-    <p>Click a pixel, pick a color, paint together.</p>
+    <p>Each pixel lasts 1 minute. Paint together in real time.</p>
   </header>
 
   <div id="status">
@@ -180,47 +260,154 @@
     <span id="status-text">Connecting…</span>
   </div>
 
-  <div id="canvas-wrap">
-    <div id="grid"></div>
-  </div>
+  <div id="grid"></div>
 
   <div id="palette-wrap">
     <div id="swatches"></div>
     <div id="custom-color-wrap">
-      <label for="custom-color">Custom color</label>
+      <label for="custom-color">Custom</label>
       <input type="color" id="custom-color" value="#a78bfa" />
     </div>
     <div id="selected-preview">
       <span>Selected:</span>
       <span id="preview-dot"></span>
-      <span id="preview-hex">#ffffff</span>
+      <span id="preview-hex">#ef4444</span>
     </div>
   </div>
 
+  <!-- Confirmation popup -->
+  <div id="overlay">
+    <div id="popup">
+      <h2>Pixel is busy</h2>
+      <div class="popup-colors">
+        <div class="popup-color-block">
+          <label>Now</label>
+          <div class="color-chip" id="popup-current"></div>
+        </div>
+        <div class="popup-arrow">→</div>
+        <div class="popup-color-block">
+          <label>Your color</label>
+          <div class="color-chip" id="popup-yours"></div>
+        </div>
+      </div>
+      <div class="popup-info">
+        <div class="info-row">
+          <span class="lbl">Appears at</span>
+          <span class="val" id="popup-time">—</span>
+        </div>
+        <div class="info-row">
+          <span class="lbl">Wait</span>
+          <span class="val" id="popup-wait">—</span>
+        </div>
+        <div class="info-row">
+          <span class="lbl">Queue position</span>
+          <span class="val" id="popup-pos">—</span>
+        </div>
+      </div>
+      <div class="popup-actions">
+        <button id="btn-cancel">Cancel</button>
+        <button id="btn-confirm">Add to queue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="toast">
+    <div class="toast-title" id="toast-title"></div>
+    <div class="toast-body"  id="toast-body"></div>
+  </div>
+
   <script>
-    const GRID_SIZE = 10;
+    const GRID_SIZE  = 10;
+    const EXPIRE_MS  = 60 * 1000;
+
     const PALETTE = [
-      '#ffffff', '#000000', '#ef4444', '#f97316', '#eab308',
-      '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899',
-      '#f5f5f5', '#404040', '#fca5a5', '#fdba74', '#fde047',
-      '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd', '#f9a8d4',
+      '#ffffff','#000000','#ef4444','#f97316','#eab308',
+      '#22c55e','#06b6d4','#3b82f6','#8b5cf6','#ec4899',
+      '#f5f5f5','#525252','#fca5a5','#fdba74','#fde047',
+      '#86efac','#67e8f9','#93c5fd','#c4b5fd','#f9a8d4',
     ];
 
     let selectedColor = '#ef4444';
 
-    // --- Build grid ---
-    const grid = document.getElementById('grid');
-    const cells = [];
+    // Local cell state
+    const cellData = Array(GRID_SIZE * GRID_SIZE).fill(null).map(() => ({
+      color: '#ffffff', expiresAt: null, queueLength: 0
+    }));
+
+    // ── Build grid ────────────────────────────────────
+    const gridEl = document.getElementById('grid');
+    const cells  = [];
+
     for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
       const cell = document.createElement('div');
-      cell.className = 'cell';
-      cell.dataset.index = i;
-      cell.addEventListener('click', () => paintCell(i, selectedColor));
-      grid.appendChild(cell);
+      cell.className = 'cell blank';
+      cell.addEventListener('click', () => onCellClick(i));
+      gridEl.appendChild(cell);
       cells.push(cell);
     }
 
-    // --- Build palette ---
+    function setCellState(i, { color, expiresAt, queueLength }, animate) {
+      const d    = cellData[i];
+      const cell = cells[i];
+
+      const wasBlank   = !d.expiresAt;
+      const nowBlank   = !expiresAt;
+      const colorChanged = d.color !== color;
+
+      d.color       = color;
+      d.expiresAt   = expiresAt;
+      d.queueLength = queueLength;
+
+      cell.style.background = color;
+      cell.classList.toggle('blank', nowBlank);
+
+      // Timer bar initial value
+      if (expiresAt) {
+        const progress = Math.max(0, (expiresAt - Date.now()) / EXPIRE_MS);
+        cell.style.setProperty('--timer', progress);
+      } else {
+        cell.style.setProperty('--timer', 0);
+      }
+
+      // Queue badge
+      let badge = cell.querySelector('.badge');
+      if (queueLength > 0) {
+        if (!badge) { badge = document.createElement('div'); badge.className = 'badge'; cell.appendChild(badge); }
+        badge.textContent = queueLength;
+      } else {
+        badge?.remove();
+      }
+
+      // Animations
+      if (animate) {
+        if (!wasBlank && nowBlank) {
+          // Pixel expired → cleared
+          cell.classList.remove('clearing');
+          void cell.offsetWidth;
+          cell.classList.add('clearing');
+        } else if (colorChanged && !nowBlank) {
+          // New color painted
+          cell.classList.remove('painted');
+          void cell.offsetWidth;
+          cell.classList.add('painted');
+        }
+      }
+    }
+
+    // ── Timer bar animation loop (every 150ms) ────────
+    setInterval(() => {
+      const now = Date.now();
+      cells.forEach((cell, i) => {
+        const { expiresAt } = cellData[i];
+        if (expiresAt) {
+          const progress = Math.max(0, (expiresAt - now) / EXPIRE_MS);
+          cell.style.setProperty('--timer', progress);
+        }
+      });
+    }, 150);
+
+    // ── Palette ───────────────────────────────────────
     const swatchesEl = document.getElementById('swatches');
     PALETTE.forEach(color => {
       const s = document.createElement('div');
@@ -231,60 +418,116 @@
       swatchesEl.appendChild(s);
     });
 
-    const customInput = document.getElementById('custom-color');
-    customInput.addEventListener('input', () => selectColor(customInput.value));
+    document.getElementById('custom-color').addEventListener('input', e => selectColor(e.target.value));
 
     function selectColor(color) {
       selectedColor = color;
       document.querySelectorAll('.swatch').forEach(s =>
-        s.classList.toggle('active', s.style.background === hexToRgb(color) || s.title === color)
+        s.classList.toggle('active', s.title === color)
       );
       document.getElementById('preview-dot').style.background = color;
       document.getElementById('preview-hex').textContent = color;
     }
-
-    function hexToRgb(hex) {
-      // Browsers convert hex to rgb in style.background
-      const r = parseInt(hex.slice(1,3),16);
-      const g = parseInt(hex.slice(3,5),16);
-      const b = parseInt(hex.slice(5,7),16);
-      return `rgb(${r}, ${g}, ${b})`;
-    }
-
     selectColor('#ef4444');
 
-    // --- WebSocket ---
+    // ── WebSocket ─────────────────────────────────────
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     const ws = new WebSocket(`${proto}://${location.host}`);
 
-    const dot = document.getElementById('status-dot');
+    const dot        = document.getElementById('status-dot');
     const statusText = document.getElementById('status-text');
 
     ws.addEventListener('open', () => {
       dot.classList.add('connected');
       statusText.textContent = 'Connected — painting live';
     });
-
     ws.addEventListener('close', () => {
       dot.classList.remove('connected');
       statusText.textContent = 'Disconnected — refresh to reconnect';
     });
-
-    ws.addEventListener('message', (evt) => {
+    ws.addEventListener('message', evt => {
       const msg = JSON.parse(evt.data);
       if (msg.type === 'init') {
-        msg.canvas.forEach((color, i) => { cells[i].style.background = color; });
-      } else if (msg.type === 'paint') {
-        cells[msg.index].style.background = msg.color;
-        cells[msg.index].classList.remove('painted');
-        void cells[msg.index].offsetWidth; // reflow to restart animation
-        cells[msg.index].classList.add('painted');
+        msg.pixels.forEach(p => setCellState(p.index, p, false));
+      } else if (msg.type === 'update') {
+        setCellState(msg.index, msg, true);
+      } else if (msg.type === 'queue_ack') {
+        showToast(msg);
       }
     });
 
-    function paintCell(index, color) {
+    // ── Cell click ────────────────────────────────────
+    let pending = null;
+
+    function onCellClick(index) {
       if (ws.readyState !== WebSocket.OPEN) return;
-      ws.send(JSON.stringify({ type: 'paint', index, color }));
+      const d = cellData[index];
+
+      if (!d.expiresAt) {
+        // Blank pixel — paint immediately
+        ws.send(JSON.stringify({ type: 'paint', index, color: selectedColor }));
+      } else {
+        // Busy pixel — show confirmation popup
+        const queueLen    = d.queueLength;
+        const scheduledAt = d.expiresAt + queueLen * EXPIRE_MS;
+        const waitMs      = scheduledAt - Date.now();
+
+        pending = { index, color: selectedColor };
+        openPopup({ currentColor: d.color, newColor: selectedColor, scheduledAt, queuePos: queueLen + 1, waitMs });
+      }
+    }
+
+    // ── Popup ─────────────────────────────────────────
+    const overlay = document.getElementById('overlay');
+
+    function openPopup({ currentColor, newColor, scheduledAt, queuePos, waitMs }) {
+      document.getElementById('popup-current').style.background = currentColor;
+      document.getElementById('popup-yours').style.background   = newColor;
+      document.getElementById('popup-time').textContent  = fmtTime(scheduledAt);
+      document.getElementById('popup-wait').textContent  = fmtWait(waitMs);
+      document.getElementById('popup-pos').textContent   = `#${queuePos}`;
+      overlay.classList.add('show');
+    }
+
+    function closePopup() {
+      overlay.classList.remove('show');
+      pending = null;
+    }
+
+    document.getElementById('btn-cancel').addEventListener('click', closePopup);
+    overlay.addEventListener('click', e => { if (e.target === overlay) closePopup(); });
+
+    document.getElementById('btn-confirm').addEventListener('click', () => {
+      if (!pending) return;
+      ws.send(JSON.stringify({ type: 'paint', index: pending.index, color: pending.color }));
+      closePopup();
+    });
+
+    // ── Toast ─────────────────────────────────────────
+    const toastEl    = document.getElementById('toast');
+    const toastTitle = document.getElementById('toast-title');
+    const toastBody  = document.getElementById('toast-body');
+    let toastTimer;
+
+    function showToast({ scheduledAt, queuePosition, color }) {
+      toastTitle.textContent = `Queued at #${queuePosition}`;
+      toastBody.innerHTML    = `Your color appears at <strong style="color:#e8e8f0">${fmtTime(scheduledAt)}</strong>`;
+      toastEl.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove('show'), 4500);
+    }
+
+    // ── Helpers ───────────────────────────────────────
+    function fmtTime(ts) {
+      return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    function fmtWait(ms) {
+      if (ms <= 0) return 'Soon';
+      const s = Math.round(ms / 1000);
+      if (s < 60) return `${s}s`;
+      const m = Math.floor(s / 60), r = s % 60;
+      return r > 0 ? `${m}m ${r}s` : `${m}m`;
     }
   </script>
 </body>
