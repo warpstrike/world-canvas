@@ -516,7 +516,10 @@
     // ── Cell click (cart toggle) ──────────────────────
     function onCellClick(index) {
       if (cart.has(index)) {
-        removeFromCart(index);
+        // Re-clicking an already-queued pixel updates its colour
+        cart.set(index, { color: selectedColor });
+        refreshCellCartDot(index);
+        refreshCartEntry(index);
       } else {
         addToCart(index);
       }
