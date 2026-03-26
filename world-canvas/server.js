@@ -8,7 +8,7 @@ const server = http.createServer(app);
 const wss    = new WebSocketServer({ server });
 
 const GRID_SIZE = 10;
-const SLOT_MS   = 10 * 1000; // 10-second universal slots
+const SLOT_MS   = 60 * 1000; // 60-second universal slots
 
 // Slot boundaries are derived from Unix epoch so every client/server agrees
 function currentSlotStart() {
