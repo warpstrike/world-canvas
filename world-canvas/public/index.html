@@ -479,12 +479,6 @@
       );
       document.getElementById('preview-dot').style.background = color;
       document.getElementById('preview-hex').textContent = color;
-      // Update cart dots and entries for any selected cells
-      cart.forEach((_, i) => {
-        cart.set(i, { color });
-        refreshCellCartDot(i);
-        refreshCartEntry(i);
-      });
     }
     selectColor('#ef4444');
 
