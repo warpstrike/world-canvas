@@ -276,7 +276,7 @@
 
   <header>
     <h1>World Canvas</h1>
-    <p>A shared 10×10 canvas — paint pixels that last one slot (10 s)</p>
+    <p>A shared 10×10 canvas — paint pixels that last one slot (60 s)</p>
   </header>
 
   <div id="status">
@@ -338,7 +338,7 @@
 
   <script>
     const GRID_SIZE = 10;
-    const SLOT_MS   = 10 * 1000;
+    const SLOT_MS   = 60 * 1000;
 
     // Slot helpers — identical logic to server, derived from Unix epoch
     function currentSlotStart() { return Math.floor(Date.now() / SLOT_MS) * SLOT_MS; }
