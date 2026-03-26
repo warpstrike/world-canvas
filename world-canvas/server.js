@@ -3,18 +3,27 @@ const { WebSocketServer } = require('ws');
 const http = require('http');
 const path = require('path');
 
-const app = express();
+const app    = express();
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+const wss    = new WebSocketServer({ server });
 
 const GRID_SIZE = 10;
-const EXPIRE_MS = 10 * 1000; // 10 seconds
+const SLOT_MS   = 10 * 1000; // 10-second universal slots
 
-// Each pixel: { color, expiresAt: timestamp|null, queue: [{color, scheduledAt}] }
+// Slot boundaries are derived from Unix epoch so every client/server agrees
+function currentSlotStart() {
+  return Math.floor(Date.now() / SLOT_MS) * SLOT_MS;
+}
+function nextSlotStart() {
+  return currentSlotStart() + SLOT_MS;
+}
+
+// Each pixel: { color, activeUntil: slot-end timestamp | null, queue: [{color, slotStart}] }
+// slotStart values are always exact slot boundaries (multiples of SLOT_MS from epoch).
 const pixels = Array(GRID_SIZE * GRID_SIZE).fill(null).map(() => ({
-  color: '#ffffff',
-  expiresAt: null,
-  queue: []
+  color:       '#ffffff',
+  activeUntil: null,
+  queue:       []
 }));
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -24,43 +33,73 @@ function broadcast(msg) {
   wss.clients.forEach(c => { if (c.readyState === 1) c.send(data); });
 }
 
+// Snapshot sent to clients. Includes the first queued item so clients can
+// render a "pending" preview before the slot fires.
 function snapshot(index) {
   const p = pixels[index];
-  return { index, color: p.color, expiresAt: p.expiresAt, queueLength: p.queue.length };
+  return {
+    index,
+    color:        p.color,
+    activeUntil:  p.activeUntil,
+    queueLength:  p.queue.length,
+    pendingColor: p.queue.length > 0 ? p.queue[0].color    : null,
+    pendingAt:    p.queue.length > 0 ? p.queue[0].slotStart : null,
+  };
 }
 
-function applyNext(index) {
+// Advance a pixel's state to the given timestamp:
+// – expire the active color if its slot has ended
+// – activate the earliest queued entry whose slot has begun (skip any that
+//   have already expired without ever being displayed)
+function processPixel(index, now) {
   const p = pixels[index];
-  const prevExpiresAt = p.expiresAt;
 
-  if (p.queue.length > 0) {
-    const next = p.queue.shift();
-    p.color = next.color;
-    // Chain timing to avoid drift from polling delay
-    p.expiresAt = prevExpiresAt + EXPIRE_MS;
-  } else {
-    p.color = '#ffffff';
-    p.expiresAt = null;
+  if (p.activeUntil !== null && p.activeUntil <= now) {
+    p.color       = '#ffffff';
+    p.activeUntil = null;
   }
-  broadcast({ type: 'update', ...snapshot(index) });
+
+  while (p.queue.length > 0) {
+    const q    = p.queue[0];
+    if (q.slotStart > now) break;          // not yet
+
+    const qEnd = q.slotStart + SLOT_MS;
+    p.queue.shift();
+
+    if (qEnd > now) {                      // slot is currently active
+      p.color       = q.color;
+      p.activeUntil = qEnd;
+      break;
+    }
+    // else: this slot already expired — discard and continue
+  }
 }
 
-// Check expired pixels every 500ms
+// Every 200 ms: tick all pixels.  Collect every pixel that changed and
+// send ONE batch_update so all clients flip at exactly the same time.
 setInterval(() => {
-  const now = Date.now();
-  pixels.forEach((p, i) => {
-    if (p.expiresAt && now >= p.expiresAt) applyNext(i);
+  const now     = Date.now();
+  const updates = [];
+
+  pixels.forEach((_, i) => {
+    const before = JSON.stringify(snapshot(i));
+    processPixel(i, now);
+    const after  = JSON.stringify(snapshot(i));
+    if (before !== after) updates.push(snapshot(i));
   });
-}, 500);
+
+  if (updates.length > 0) {
+    broadcast({ type: 'batch_update', pixels: updates });
+  }
+}, 200);
 
 wss.on('connection', ws => {
-  // Send full state to new client
+  // Send full board state to the new client
   ws.send(JSON.stringify({ type: 'init', pixels: pixels.map((_, i) => snapshot(i)) }));
 
   ws.on('message', data => {
     let msg;
     try { msg = JSON.parse(data); } catch { return; }
-
     if (msg.type !== 'batch_paint') return;
     if (!Array.isArray(msg.items) || msg.items.length === 0) return;
 
@@ -73,24 +112,26 @@ wss.on('connection', ws => {
 
       const p = pixels[index];
 
-      if (!p.expiresAt) {
-        // Blank — paint immediately
-        p.color = color;
-        p.expiresAt = Date.now() + EXPIRE_MS;
-        broadcast({ type: 'update', ...snapshot(index) });
-        results.push({ index, immediate: true });
+      // Find the first free slot: after the active slot (if any) and all
+      // already-queued slots.  All slots are aligned to slot boundaries.
+      let scheduledAt;
+      if (p.queue.length > 0) {
+        scheduledAt = p.queue[p.queue.length - 1].slotStart + SLOT_MS;
+      } else if (p.activeUntil !== null) {
+        scheduledAt = p.activeUntil;            // begins right when current ends
       } else {
-        // Taken — queue it
-        const lastSlotEndsAt = p.queue.length > 0
-          ? p.queue[p.queue.length - 1].scheduledAt + EXPIRE_MS
-          : p.expiresAt;
-
-        const scheduledAt = lastSlotEndsAt;
-        p.queue.push({ color, scheduledAt });
-        broadcast({ type: 'update', ...snapshot(index) });
-        results.push({ index, immediate: false, scheduledAt, queuePosition: p.queue.length });
+        scheduledAt = nextSlotStart();          // blank — next upcoming boundary
       }
+
+      p.queue.push({ color, slotStart: scheduledAt });
+      results.push({ index, scheduledAt, queuePosition: p.queue.length });
     }
+
+    // Broadcast updated snapshots immediately so pending indicators appear
+    // on every client's canvas without waiting for the next tick.
+    results.forEach(({ index }) => {
+      broadcast({ type: 'update', ...snapshot(index) });
+    });
 
     ws.send(JSON.stringify({ type: 'batch_ack', results }));
   });
