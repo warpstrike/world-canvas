@@ -421,6 +421,91 @@
     .toast-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 6px; color: #e0e0f0; }
     .toast-line  { font-size: 0.8rem; color: #8888a8; line-height: 1.6; }
     .toast-line strong { color: #a78bfa; }
+
+    /* ── Credit bar ───────────────────────────────── */
+    #credit-section {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    #credit-bar {
+      display: flex; align-items: center; gap: 10px;
+    }
+    #credit-display {
+      display: flex; align-items: center; gap: 7px;
+      background: rgba(167,139,250,0.10);
+      border: 1px solid rgba(167,139,250,0.22);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.83rem; font-weight: 600; color: #c8c8e0;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+    #credit-display.low {
+      background: rgba(234,179,8,0.12);
+      border-color: rgba(234,179,8,0.35);
+      color: #eab308;
+    }
+    #credit-amount {
+      font-variant-numeric: tabular-nums;
+      font-size: 1rem; font-weight: 700;
+    }
+    .credit-label { font-size: 0.74rem; color: #6b6b80; font-weight: 500; }
+
+    #faucet-btn {
+      background: rgba(96,165,250,0.12);
+      border: 1px solid rgba(96,165,250,0.25);
+      color: #60a5fa;
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.82rem; font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s, border-color 0.15s;
+    }
+    #faucet-btn:hover { background: rgba(96,165,250,0.22); transform: translateY(-1px); }
+    #faucet-btn.active {
+      background: rgba(96,165,250,0.22);
+      border-color: rgba(96,165,250,0.5);
+    }
+
+    /* Faucet inline panel */
+    #faucet-panel {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;
+      background: #1a1a27;
+      border: 1px solid #2a2a3e;
+      border-radius: 12px;
+      padding: 12px 18px;
+      animation: fadeIn 0.18s ease-out;
+      max-width: 420px; width: 100%;
+    }
+    #faucet-panel.hidden { display: none; }
+    .faucet-label { font-size: 0.82rem; color: #8888a8; flex: 1; min-width: 120px; }
+    #faucet-input {
+      width: 80px;
+      background: #252535; color: #c8c8e0;
+      border: 1px solid #3a3a52; border-radius: 7px;
+      padding: 6px 8px; font-size: 0.85rem;
+      text-align: center; font-variant-numeric: tabular-nums;
+    }
+    #faucet-input:focus { outline: none; border-color: #60a5fa; }
+    #faucet-claim-btn {
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      color: #fff; border: none; border-radius: 7px;
+      padding: 7px 16px; font-size: 0.82rem; font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+    #faucet-claim-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    /* Insufficient-credits banner inside cart panel */
+    #cart-credits-banner {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 9px 16px;
+      background: rgba(234,179,8,0.09);
+      border-top: 1px solid rgba(234,179,8,0.20);
+      font-size: 0.78rem; color: #eab308; line-height: 1.5;
+    }
+    #cart-credits-banner.hidden { display: none; }
+    #cart-credits-banner svg { flex-shrink: 0; margin-top: 1px; }
+    #cart-credits-banner strong { font-weight: 700; }
   </style>
 </head>
 <body>
@@ -433,6 +518,27 @@
   <div id="status">
     <div id="status-dot"></div>
     <span id="status-text">Connecting…</span>
+  </div>
+
+  <!-- Credit bar + faucet -->
+  <div id="credit-section">
+    <div id="credit-bar">
+      <div id="credit-display">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="10" cy="10" r="8"/>
+          <path d="M10 6v8"/><path d="M7.5 8.5h3a1.5 1.5 0 0 1 0 3h-3"/>
+        </svg>
+        <span id="credit-amount">0</span>
+        <span class="credit-label">credits</span>
+      </div>
+      <button id="faucet-btn">🚰 Faucet</button>
+    </div>
+
+    <div id="faucet-panel" class="hidden">
+      <span class="faucet-label">How many credits to claim?</span>
+      <input type="number" id="faucet-input" value="10" min="1" max="9999" />
+      <button id="faucet-claim-btn">Claim</button>
+    </div>
   </div>
 
   <!-- Canvas grid -->
@@ -510,6 +616,16 @@
       Remove them from the cart before applying.
     </div>
 
+    <!-- Shown when the user doesn't have enough credits -->
+    <div id="cart-credits-banner" class="hidden">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <circle cx="10" cy="10" r="8"/>
+        <path d="M10 6v8"/><path d="M7.5 8.5h3a1.5 1.5 0 0 1 0 3h-3"/>
+      </svg>
+      Not enough credits — you need <strong id="credits-needed">0</strong> but only have <strong id="credits-have">0</strong>.
+      Use the 🚰 Faucet to claim more.
+    </div>
+
     <div id="cart-empty">
       <svg width="28" height="28" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
         <circle cx="7" cy="17" r="1.5"/><circle cx="14" cy="17" r="1.5"/>
@@ -551,6 +667,42 @@
       pendingColor: null,
       pendingAt:    null,
     }));
+
+    // ── Credits ───────────────────────────────────────
+    let credits = parseInt(localStorage.getItem('wc-credits') || '0', 10);
+    const creditAmountEl  = document.getElementById('credit-amount');
+    const creditDisplayEl = document.getElementById('credit-display');
+    const faucetBtn       = document.getElementById('faucet-btn');
+    const faucetPanel     = document.getElementById('faucet-panel');
+    const faucetInput     = document.getElementById('faucet-input');
+    const faucetClaimBtn  = document.getElementById('faucet-claim-btn');
+
+    function saveCredits() { localStorage.setItem('wc-credits', credits); }
+
+    function refreshCreditDisplay() {
+      creditAmountEl.textContent = credits;
+      creditDisplayEl.classList.toggle('low', cart.size > 0 && credits < cart.size);
+    }
+
+    faucetBtn.addEventListener('click', () => {
+      const opening = faucetPanel.classList.contains('hidden');
+      faucetPanel.classList.toggle('hidden', !opening);
+      faucetBtn.classList.toggle('active', opening);
+      if (opening) { faucetInput.select(); faucetInput.focus(); }
+    });
+
+    faucetClaimBtn.addEventListener('click', () => {
+      const n = Math.max(1, Math.min(9999, parseInt(faucetInput.value, 10) || 0));
+      if (!n) return;
+      credits += n;
+      saveCredits();
+      faucetPanel.classList.add('hidden');
+      faucetBtn.classList.remove('active');
+      refreshCreditDisplay();
+      updateCartUI();    // re-evaluate Apply button and banners
+    });
+
+    faucetInput.addEventListener('keydown', e => { if (e.key === 'Enter') faucetClaimBtn.click(); });
 
     // Cart: Map<index, {color}>
     const cart = new Map();
@@ -651,7 +803,7 @@
           : fmtTime(batchScheduledAt);
       // Keep Apply button and row styling in sync as the clock passes the slot
       if (cart.size > 0) {
-        btnApply.disabled = cart.size === 0 || ws.readyState !== WebSocket.OPEN || past;
+        btnApply.disabled = cart.size === 0 || ws.readyState !== WebSocket.OPEN || past || credits < cart.size;
         batchTimeRow.classList.toggle('past', past);
       }
     }, 150);
@@ -826,9 +978,20 @@
         if (conflict) any = true;
       });
       cartConflictBanner.classList.toggle('hidden', !any);
-      // Re-evaluate Apply button with conflict state included
+
+      // Credit check
+      const needCredits = cart.size > 0 && credits < cart.size;
+      const cartCreditsBanner = document.getElementById('cart-credits-banner');
+      cartCreditsBanner.classList.toggle('hidden', !needCredits);
+      if (needCredits) {
+        document.getElementById('credits-needed').textContent = cart.size;
+        document.getElementById('credits-have').textContent   = credits;
+      }
+      refreshCreditDisplay();
+
+      // Re-evaluate Apply button with conflict + credit state included
       btnApply.disabled = cart.size === 0 || ws.readyState !== WebSocket.OPEN
-                         || isBatchPast() || any;
+                         || isBatchPast() || any || needCredits;
     }
 
     function renderCartItem(index) {
@@ -887,11 +1050,15 @@
     });
 
     btnApply.addEventListener('click', () => {
-      if (ws.readyState !== WebSocket.OPEN || cart.size === 0 || isBatchPast() || hasCartConflicts()) return;
+      if (ws.readyState !== WebSocket.OPEN || cart.size === 0 || isBatchPast() || hasCartConflicts() || credits < cart.size) return;
+      const cost  = cart.size;
       const items = [...cart.entries()].map(([index, { color }]) => ({
         index, color, scheduledAt: batchScheduledAt,
       }));
       [...cart.keys()].forEach(removeFromCart);
+      credits -= cost;
+      saveCredits();
+      refreshCreditDisplay();
       ws.send(JSON.stringify({ type: 'batch_paint', items }));
     });
 
@@ -1050,8 +1217,9 @@
       batchPicker.classList.contains('hidden') ? openBatchPicker() : closeCalendar();
     });
 
-    // Initialise label immediately
+    // Initialise labels immediately
     updateBatchTimeBtn();
+    refreshCreditDisplay();
   </script>
 </body>
 </html>
