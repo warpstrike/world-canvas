@@ -248,25 +248,163 @@
     }
     .cart-arrow { color: #4a4a60; font-size: 0.9rem; }
 
-    /* Slot time picker inside each cart row */
-    .slot-select {
-      flex: 1;
+    /* Batch time-picker row (shown above cart items when cart is non-empty) */
+    #batch-time-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid #22223040;
+      background: rgba(167,139,250,0.04);
+      cursor: pointer;
+      transition: background 0.15s;
+      user-select: none;
+    }
+    #batch-time-row:not(.hidden):hover { background: rgba(167,139,250,0.10); }
+    #batch-time-row.hidden { display: none; }
+
+    .batch-time-label {
+      font-size: 0.78rem; color: #6b6b80; white-space: nowrap; flex-shrink: 0;
+    }
+    #batch-time-btn {
+      flex: 1; min-width: 0;
+      background: #252535; color: #c8c8e0;
+      border: 1px solid #3a3a52; border-radius: 7px;
+      padding: 5px 10px; font-size: 0.8rem;
+      text-align: left; pointer-events: none;   /* row handles all clicks */
+      transition: border-color 0.15s, color 0.15s;
+    }
+    #batch-time-row:hover  #batch-time-btn { border-color: #a78bfa88; color: #a78bfa; }
+    #batch-time-row.active #batch-time-btn { border-color: #a78bfa;   color: #a78bfa; }
+    #batch-wait {
+      font-size: 0.74rem; color: #6b6b80; flex-shrink: 0;
+      white-space: nowrap; font-variant-numeric: tabular-nums;
+    }
+    /* Chevron hint */
+    #batch-time-row::after {
+      content: '›'; color: #4a4a60; font-size: 1rem; margin-left: auto;
+      transition: color 0.15s, transform 0.2s;
+    }
+    #batch-time-row:hover::after  { color: #a78bfa; }
+    #batch-time-row.active::after { color: #a78bfa; transform: rotate(90deg); }
+
+    /* Past-slot warning state */
+    #batch-time-row.past { background: rgba(239,68,68,0.07); }
+    #batch-time-row.past:hover { background: rgba(239,68,68,0.12); }
+    #batch-time-row.past #batch-time-btn { border-color: #ef444455; color: #ef4444; }
+    #batch-time-row.past #batch-wait     { color: #ef4444; }
+    #batch-time-row.past::after          { color: #ef444488; }
+
+    /* Blocked cursor on taken cells (pointer-events still reach cell for the guard) */
+    .cell.slot-taken { cursor: not-allowed; }
+
+    /* Cart item conflict styling */
+    .cart-item.conflict {
+      background: rgba(239,68,68,0.07);
+      border-left: 3px solid rgba(239,68,68,0.45);
+    }
+    .conflict-badge {
+      margin-left: auto; flex-shrink: 0;
+      font-size: 0.71rem; font-weight: 700;
+      color: #ef4444; white-space: nowrap;
+    }
+    .conflict-badge.hidden { display: none; }
+
+    /* Conflict warning banner above the cart list */
+    #cart-conflict-banner {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 9px 16px;
+      background: rgba(239,68,68,0.09);
+      border-top: 1px solid rgba(239,68,68,0.18);
+      font-size: 0.78rem; color: #ef4444; line-height: 1.5;
+    }
+    #cart-conflict-banner.hidden { display: none; }
+    #cart-conflict-banner svg { flex-shrink: 0; margin-top: 1px; }
+
+    /* Unavailable-slot overlay on canvas cells */
+    .unavail-overlay {
+      position: absolute; inset: 0; border-radius: 5px;
+      background: rgba(20,20,35,0.60);
+      pointer-events: none; z-index: 3;
+    }
+    .unavail-overlay::before,
+    .unavail-overlay::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 55%; height: 2.5px;
+      background: #ef4444;
+      border-radius: 2px;
+      transform-origin: center;
+    }
+    .unavail-overlay::before { transform: translate(-50%,-50%) rotate(45deg); }
+    .unavail-overlay::after  { transform: translate(-50%,-50%) rotate(-45deg); }
+
+    /* Calendar popup — time section */
+    .cal-sep {
+      border: none; border-top: 1px solid #2a2a3e; margin: 12px 0 10px;
+    }
+    .cal-time-row {
+      display: flex; align-items: center; gap: 7px;
+    }
+    .cal-time-label { font-size: 0.78rem; color: #6b6b80; flex: 1; }
+    .time-select {
       background: #252535; color: #c8c8e0;
       border: 1px solid #3a3a52; border-radius: 6px;
-      padding: 4px 7px; font-size: 0.76rem;
-      cursor: pointer; font-variant-numeric: tabular-nums;
-      min-width: 0;
+      padding: 4px 4px; font-size: 0.78rem; width: 54px;
+      cursor: pointer; font-variant-numeric: tabular-nums; text-align: center;
     }
-    .slot-select:hover  { border-color: #a78bfa88; }
-    .slot-select:focus  { outline: none; border-color: #a78bfa; }
-    .slot-select option { background: #1a1a27; }
+    .time-select:hover { border-color: #a78bfa88; }
+    .time-select:focus { outline: none; border-color: #a78bfa; }
+    .time-select option { background: #1a1a27; }
+    .time-colon { color: #4a4a60; font-weight: 700; }
 
-    .slot-wait {
-      flex-shrink: 0;
-      font-size: 0.74rem; color: #6b6b80;
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
+    /* ── Inline date-time picker (expands inside cart panel) ── */
+    #batch-picker {
+      border-top: 1px solid #22223040;
+      padding: 14px 16px 16px;
+      background: rgba(16,16,32,0.5);
+      user-select: none;
     }
+    #batch-picker.hidden { display: none; }
+    #batch-picker .cal-inner {
+      max-width: 252px;
+      margin: 0 auto;
+    }
+
+    .cal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .cal-month-label { font-size: 0.85rem; font-weight: 700; color: #c8c8e0; }
+    .cal-nav {
+      background: none; border: none; color: #6b6b80;
+      cursor: pointer; font-size: 1.1rem; padding: 2px 7px;
+      border-radius: 5px; line-height: 1;
+      transition: background 0.12s, color 0.12s;
+    }
+    .cal-nav:hover { background: rgba(167,139,250,0.12); color: #a78bfa; }
+
+    .cal-weekdays {
+      display: grid; grid-template-columns: repeat(7,1fr);
+      margin-bottom: 4px;
+    }
+    .cal-weekdays span {
+      text-align: center; font-size: 0.66rem;
+      color: #4a4a60; font-weight: 700; padding: 2px 0;
+    }
+
+    #cal-days {
+      display: grid; grid-template-columns: repeat(7,1fr); gap: 2px;
+    }
+    .cal-day {
+      aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+      border: none; background: none; border-radius: 6px;
+      font-size: 0.78rem; color: #c8c8e0; cursor: pointer;
+      transition: background 0.1s, color 0.1s;
+    }
+    .cal-day:not(.past):hover { background: rgba(167,139,250,0.15); color: #a78bfa; }
+    .cal-day.today  { color: #a78bfa; font-weight: 700; }
+    .cal-day.past   { color: #3a3a52; cursor: default; }
+    .cal-day.selected { background: #a78bfa !important; color: #fff !important; border-radius: 6px; }
 
     /* ── Toast ────────────────────────────────── */
     #toast {
@@ -331,6 +469,45 @@
           <button id="btn-apply" disabled>Apply All</button>
         </div>
       </div>
+    </div>
+
+    <!-- Global batch schedule row -->
+    <div id="batch-time-row" class="hidden">
+      <span class="batch-time-label">Schedule for</span>
+      <button id="batch-time-btn">📅 Today, 00:00</button>
+      <span id="batch-wait">—</span>
+    </div>
+
+    <!-- Inline date-time picker, toggled by batch-time-row click -->
+    <div id="batch-picker" class="hidden">
+      <div class="cal-inner">
+        <div class="cal-header">
+          <button class="cal-nav" id="cal-prev">‹</button>
+          <span class="cal-month-label" id="cal-month-label"></span>
+          <button class="cal-nav" id="cal-next">›</button>
+        </div>
+        <div class="cal-weekdays">
+          <span>Su</span><span>Mo</span><span>Tu</span>
+          <span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+        </div>
+        <div id="cal-days"></div>
+        <hr class="cal-sep">
+        <div class="cal-time-row">
+          <span class="cal-time-label">🕐 Time</span>
+          <select id="cal-hour-sel" class="time-select"></select>
+          <span class="time-colon">:</span>
+          <select id="cal-min-sel" class="time-select"></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shown when cart items conflict with the selected batch time -->
+    <div id="cart-conflict-banner" class="hidden">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2">
+        <path d="M10 3L18 17H2L10 3Z"/><line x1="10" y1="9" x2="10" y2="13"/><circle cx="10" cy="15.5" r="0.6" fill="currentColor" stroke="none"/>
+      </svg>
+      Some pixels are already taken at the selected time.
+      Remove them from the cart before applying.
     </div>
 
     <div id="cart-empty">
@@ -464,11 +641,19 @@
       const s  = Math.ceil(ms / 1000);
       slotChipEl.textContent = `slot in ${s}s`;
 
-      // Live countdown next to each slot picker
-      document.querySelectorAll('.slot-wait[data-at]').forEach(el => {
-        const wait = Math.max(0, Math.ceil((+el.dataset.at - now) / 1000));
-        el.textContent = wait > 0 ? `in ${wait}s` : 'now';
-      });
+      // Batch-schedule countdown + live past-state refresh
+      const batchDiff = batchScheduledAt - now;
+      const past      = batchDiff < 0;
+      batchWaitEl.textContent = past
+        ? 'in the past'
+        : batchDiff < SLOT_MS
+          ? `in ${Math.ceil(batchDiff / 1000)}s`
+          : fmtTime(batchScheduledAt);
+      // Keep Apply button and row styling in sync as the clock passes the slot
+      if (cart.size > 0) {
+        btnApply.disabled = cart.size === 0 || ws.readyState !== WebSocket.OPEN || past;
+        batchTimeRow.classList.toggle('past', past);
+      }
     }, 150);
 
     // ── Palette ───────────────────────────────────────
@@ -514,11 +699,11 @@
       if (msg.type === 'init') {
         msg.pixels.forEach(p => setCellState(p.index, p, false));
       } else if (msg.type === 'update') {
-        // Immediate snapshot update (e.g. pending indicator after scheduling)
         setCellState(msg.index, msg, true);
+        if (cart.size > 0) updateUnavailableOverlays();
       } else if (msg.type === 'batch_update') {
-        // All slot-boundary changes arrive together — update cells in one pass
         msg.pixels.forEach(p => setCellState(p.index, p, true));
+        if (cart.size > 0) updateUnavailableOverlays();
       } else if (msg.type === 'batch_ack') {
         showBatchToast(msg.results);
       }
@@ -527,17 +712,19 @@
     // ── Cell click (cart toggle) ──────────────────────
     function onCellClick(index) {
       if (cart.has(index)) {
-        // Re-clicking updates the colour while keeping the chosen slot
+        // Re-clicking updates the colour of an already-queued pixel
         cart.set(index, { ...cart.get(index), color: selectedColor });
         refreshCellCartDot(index);
         refreshCartEntry(index);
       } else {
+        // Blocked: pixel is taken at the selected batch time (cross is visible)
+        if (cart.size > 0 && isOccupiedAt(index, batchScheduledAt)) return;
         addToCart(index);
       }
     }
 
     function addToCart(index) {
-      cart.set(index, { color: selectedColor, scheduledAt: nextSlotStart() });
+      cart.set(index, { color: selectedColor });
       cells[index].classList.add('selected');
       refreshCellCartDot(index);
       renderCartItem(index);
@@ -561,35 +748,87 @@
     }
 
     // ── Cart rendering ────────────────────────────────
-    const cartEmpty  = document.getElementById('cart-empty');
-    const cartItems  = document.getElementById('cart-items');
-    const badge      = document.getElementById('cart-count-badge');
-    const btnClear   = document.getElementById('btn-clear');
-    const btnApply   = document.getElementById('btn-apply');
-    const slotChipEl = document.getElementById('slot-chip');
+    const cartEmpty     = document.getElementById('cart-empty');
+    const cartItems     = document.getElementById('cart-items');
+    const badge         = document.getElementById('cart-count-badge');
+    const btnClear      = document.getElementById('btn-clear');
+    const btnApply      = document.getElementById('btn-apply');
+    const slotChipEl    = document.getElementById('slot-chip');
+    const batchTimeRow       = document.getElementById('batch-time-row');
+    const batchTimeBtnEl     = document.getElementById('batch-time-btn');
+    const batchWaitEl        = document.getElementById('batch-wait');
+    const cartConflictBanner = document.getElementById('cart-conflict-banner');
+
+    // Global schedule timestamp shared by all cart items
+    let batchScheduledAt = nextSlotStart();
+
+    function isBatchPast() { return batchScheduledAt < nextSlotStart(); }
 
     function updateCartUI() {
-      const n = cart.size;
+      const n    = cart.size;
+      const past = isBatchPast();
       cartEmpty.style.display = n === 0 ? '' : 'none';
       badge.textContent = n;
       badge.classList.toggle('show', n > 0);
       btnClear.disabled = n === 0;
-      btnApply.disabled = n === 0 || ws.readyState !== WebSocket.OPEN;
+      btnApply.disabled = n === 0 || ws.readyState !== WebSocket.OPEN || past;
+      batchTimeRow.classList.toggle('hidden', n === 0);
+      batchTimeRow.classList.toggle('past',   n > 0 && past);
+      if (n === 0) { clearUnavailableOverlays(); cartConflictBanner.classList.add('hidden'); }
+      else         updateUnavailableOverlays(); // also calls updateCartConflicts()
     }
 
-    // Build the list of upcoming slot boundaries for the picker
-    function slotOptions(selectedAt) {
-      const opts = [];
-      const base = nextSlotStart();
-      for (let i = 0; i < 10; i++) {
-        const t = base + i * SLOT_MS;
-        opts.push({ value: t, label: fmtTime(t) + (i === 0 ? ' · next' : ''), selected: t === selectedAt });
-      }
-      // If selectedAt is a future slot that's already beyond our 10-option window, add it
-      if (selectedAt > base + 9 * SLOT_MS) {
-        opts.push({ value: selectedAt, label: fmtTime(selectedAt), selected: true });
-      }
-      return opts;
+    // ── Unavailability overlays ────────────────────────
+    function isOccupiedAt(i, ts) {
+      const d = cellData[i];
+      // Active slot contains ts
+      if (d.activeUntil !== null && ts === d.activeUntil - SLOT_MS) return true;
+      // First queued entry is at ts
+      if (d.pendingAt   !== null && d.pendingAt === ts)              return true;
+      return false;
+    }
+    function updateUnavailableOverlays() {
+      cells.forEach((cell, i) => {
+        const taken = isOccupiedAt(i, batchScheduledAt);
+        cell.classList.toggle('slot-taken', taken);
+        let ov = cell.querySelector('.unavail-overlay');
+        if (taken) {
+          if (!ov) { ov = document.createElement('div'); ov.className = 'unavail-overlay'; cell.appendChild(ov); }
+        } else {
+          ov?.remove();
+        }
+      });
+      // Sync cart conflict badges whenever the canvas state changes
+      updateCartConflicts();
+    }
+    function clearUnavailableOverlays() {
+      cells.forEach(cell => cell.classList.remove('slot-taken'));
+      document.querySelectorAll('.unavail-overlay').forEach(el => el.remove());
+    }
+
+    // ── Cart conflict detection ────────────────────────
+    function hasCartConflicts() {
+      for (const [index] of cart)
+        if (isOccupiedAt(index, batchScheduledAt)) return true;
+      return false;
+    }
+
+    // Marks conflicting cart items visually and updates Apply button state
+    function updateCartConflicts() {
+      let any = false;
+      cart.forEach((_, index) => {
+        const li = document.querySelector(`.cart-item[data-index="${index}"]`);
+        if (!li) return;
+        const conflict = isOccupiedAt(index, batchScheduledAt);
+        li.classList.toggle('conflict', conflict);
+        const badge = li.querySelector('.conflict-badge');
+        if (badge) badge.classList.toggle('hidden', !conflict);
+        if (conflict) any = true;
+      });
+      cartConflictBanner.classList.toggle('hidden', !any);
+      // Re-evaluate Apply button with conflict state included
+      btnApply.disabled = cart.size === 0 || ws.readyState !== WebSocket.OPEN
+                         || isBatchPast() || any;
     }
 
     function renderCartItem(index) {
@@ -597,8 +836,6 @@
       const d     = cellData[index];
       const row   = Math.floor(index / GRID_SIZE) + 1;
       const col   = (index % GRID_SIZE) + 1;
-      const at    = entry.scheduledAt;
-      const wait  = Math.max(0, Math.ceil((at - Date.now()) / 1000));
 
       const li = document.createElement('div');
       li.className     = 'cart-item';
@@ -622,29 +859,13 @@
         <div class="chip" style="background:${entry.color}"></div>
       `;
 
-      // Slot picker
-      const sel = document.createElement('select');
-      sel.className = 'slot-select';
-      slotOptions(at).forEach(({ value, label, selected }) => {
-        const opt = document.createElement('option');
-        opt.value    = value;
-        opt.textContent = label;
-        opt.selected = selected;
-        sel.appendChild(opt);
-      });
-      sel.addEventListener('change', () => {
-        cart.set(index, { ...cart.get(index), scheduledAt: +sel.value });
-        // Refresh just the wait span
-        const span = li.querySelector('.slot-wait');
-        if (span) span.dataset.at = sel.value;
-      });
+      const conflictBadge = document.createElement('span');
+      conflictBadge.className = 'conflict-badge';
+      conflictBadge.textContent = '⚠ Taken';
+      if (!isOccupiedAt(index, batchScheduledAt)) conflictBadge.classList.add('hidden');
+      if (isOccupiedAt(index, batchScheduledAt)) li.classList.add('conflict');
 
-      const waitSpan = document.createElement('span');
-      waitSpan.className  = 'slot-wait';
-      waitSpan.dataset.at = at;
-      waitSpan.textContent = `in ${wait}s`;
-
-      li.append(removeBtn, loc, colors, sel, waitSpan);
+      li.append(removeBtn, loc, colors, conflictBadge);
       cartItems.appendChild(li);
     }
 
@@ -666,13 +887,9 @@
     });
 
     btnApply.addEventListener('click', () => {
-      if (ws.readyState !== WebSocket.OPEN || cart.size === 0) return;
-      const ns = nextSlotStart();
-      const items = [...cart.entries()].map(([index, { color, scheduledAt }]) => ({
-        index,
-        color,
-        // Ensure the chosen slot is still in the future; bump if the clock moved past it
-        scheduledAt: scheduledAt >= ns ? scheduledAt : ns,
+      if (ws.readyState !== WebSocket.OPEN || cart.size === 0 || isBatchPast() || hasCartConflicts()) return;
+      const items = [...cart.entries()].map(([index, { color }]) => ({
+        index, color, scheduledAt: batchScheduledAt,
       }));
       [...cart.keys()].forEach(removeFromCart);
       ws.send(JSON.stringify({ type: 'batch_paint', items }));
@@ -708,6 +925,133 @@
     function fmtTime(ts) {
       return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
+    function fmtDateShort(ts) {
+      const d   = new Date(ts);
+      const now = new Date();
+      const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
+      if (d.toDateString() === now.toDateString())      return 'Today';
+      if (d.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+      return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+
+    // ── Inline date-time picker (calendar + clock combined) ───
+    const batchPicker = document.getElementById('batch-picker');
+    const calDaysEl   = document.getElementById('cal-days');
+    const calLabelEl = document.getElementById('cal-month-label');
+    const calHourSel = document.getElementById('cal-hour-sel');
+    const calMinSel  = document.getElementById('cal-min-sel');
+    let   calViewDate = new Date();
+
+    // Populate static hour/minute options once
+    for (let h = 0; h < 24; h++)
+      calHourSel.appendChild(new Option(String(h).padStart(2,'0'), h));
+    for (let m = 0; m < 60; m++)
+      calMinSel.appendChild(new Option(String(m).padStart(2,'0'), m));
+
+    function syncPickerToState() {
+      const d = new Date(batchScheduledAt);
+      calHourSel.value = d.getHours();
+      calMinSel.value  = d.getMinutes();
+      calViewDate      = new Date(batchScheduledAt);
+      renderCalendarGrid();
+    }
+
+    function applyBatchDateTime(year, month, day, hour, minute) {
+      // Store exactly what the user chose — past detection handled by updateCartUI
+      batchScheduledAt = new Date(year, month, day, hour, minute, 0, 0).getTime();
+      updateBatchTimeBtn();
+      updateCartUI();
+    }
+
+    function updateBatchTimeBtn() {
+      const d = new Date(batchScheduledAt);
+      const hh = String(d.getHours()).padStart(2,'0');
+      const mm = String(d.getMinutes()).padStart(2,'0');
+      batchTimeBtnEl.textContent = `📅 ${fmtDateShort(batchScheduledAt)}, ${hh}:${mm}`;
+      if (cart.size > 0) updateUnavailableOverlays();
+    }
+
+    function openBatchPicker() {
+      syncPickerToState();
+      batchPicker.classList.remove('hidden');
+      batchTimeRow.classList.add('active');
+      // Scroll picker into view smoothly
+      batchPicker.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function closeCalendar() {
+      batchPicker.classList.add('hidden');
+      batchTimeRow.classList.remove('active');
+    }
+
+    function renderCalendarGrid() {
+      const year  = calViewDate.getFullYear();
+      const month = calViewDate.getMonth();
+      calLabelEl.textContent = new Date(year, month, 1)
+        .toLocaleDateString([], { month: 'long', year: 'numeric' });
+      calDaysEl.innerHTML = '';
+
+      const today    = new Date(); today.setHours(0,0,0,0);
+      const selected = new Date(batchScheduledAt); selected.setHours(0,0,0,0);
+      const firstDay = new Date(year, month, 1).getDay();
+      const lastDay  = new Date(year, month + 1, 0).getDate();
+
+      for (let i = 0; i < firstDay; i++)
+        calDaysEl.appendChild(document.createElement('span'));
+
+      for (let d = 1; d <= lastDay; d++) {
+        const btn = document.createElement('button');
+        btn.className   = 'cal-day';
+        btn.textContent = d;
+        const thisDate = new Date(year, month, d);
+        if (thisDate < today) {
+          btn.classList.add('past');
+        } else {
+          if (thisDate.toDateString() === today.toDateString())    btn.classList.add('today');
+          if (thisDate.toDateString() === selected.toDateString()) btn.classList.add('selected');
+          btn.addEventListener('click', () => {
+            const cur = new Date(batchScheduledAt);
+            applyBatchDateTime(year, month, d, cur.getHours(), cur.getMinutes());
+            // Sync hour/min display to potentially-bumped batchScheduledAt
+            const nd = new Date(batchScheduledAt);
+            calHourSel.value = nd.getHours();
+            calMinSel.value  = nd.getMinutes();
+            renderCalendarGrid(); // re-render to move "selected" highlight
+          });
+        }
+        calDaysEl.appendChild(btn);
+      }
+    }
+
+    calHourSel.addEventListener('change', () => {
+      const cur = new Date(batchScheduledAt);
+      applyBatchDateTime(cur.getFullYear(), cur.getMonth(), cur.getDate(),
+        +calHourSel.value, cur.getMinutes());
+    });
+    calMinSel.addEventListener('change', () => {
+      const cur = new Date(batchScheduledAt);
+      applyBatchDateTime(cur.getFullYear(), cur.getMonth(), cur.getDate(),
+        cur.getHours(), +calMinSel.value);
+    });
+
+    document.getElementById('cal-prev').addEventListener('click', e => {
+      e.stopPropagation();
+      calViewDate.setMonth(calViewDate.getMonth() - 1);
+      renderCalendarGrid();
+    });
+    document.getElementById('cal-next').addEventListener('click', e => {
+      e.stopPropagation();
+      calViewDate.setMonth(calViewDate.getMonth() + 1);
+      renderCalendarGrid();
+    });
+
+    // The entire "Schedule for" row toggles the inline picker
+    batchTimeRow.addEventListener('click', () => {
+      batchPicker.classList.contains('hidden') ? openBatchPicker() : closeCalendar();
+    });
+
+    // Initialise label immediately
+    updateBatchTimeBtn();
   </script>
 </body>
 </html>
